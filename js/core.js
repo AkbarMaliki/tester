@@ -66,8 +66,8 @@ function resizeAll() {
 // quality presets: pixel ratio, scene MSAA (else FXAA), bloom resolution, shadow map size
 export const QUALITY = {
   high: { pr: () => Math.min(devicePixelRatio, 1.5), samples: 4, bloomScale: 1, shadow: 2048 },
-  mid: { pr: () => 1, samples: 0, bloomScale: 0.5, shadow: 1024 },
-  low: { pr: () => 0.8, samples: 0, bloomScale: 0.5, shadow: 1024 },
+  mid: { pr: () => 1, samples: 0, bloomScale: 0.35, shadow: 1024 },
+  low: { pr: () => 0.8, samples: 0, bloomScale: 0.35, shadow: 1024 },
 };
 let autoRes = false;
 export function applyQuality(name) {
@@ -127,6 +127,7 @@ export const U = {
 export function paint(material, name) {
   const v = sections(SH[`${name}.vert`]), f = sections(SH[`${name}.frag`]);
   material.customProgramCacheKey = () => 'paint-' + name;
+  material.userData.painted = true;   // custom attributes/shader: never batched
   material.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = [DEFINES, SH.common, v.head, ''].join('\n') + sh.vertexShader

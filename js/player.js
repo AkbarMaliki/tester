@@ -12,6 +12,7 @@ import { WU } from './terrain.js';
 import { car, chassisBody, drive, setDoor, isUpsideDown, unflip } from './car.js';
 import { smoke } from './effects.js';
 import { sfx } from './audio.js';
+import { bakeRig } from './batch.js';
 
 const WALK = 3.4, RUN = 7, JUMP = 6.2, HIP_Y = 0.64;
 
@@ -173,6 +174,9 @@ J.LA = arm(1); J.RA = arm(-1);
   deco(cyl(0.008, 0.008, 0.06, 4), M.leaf, cap, 0.06, 0.21, -0.04);
   for (const s of [1, -1]) { const l = deco(new THREE.SphereGeometry(0.03, 6, 4), M.leaf, cap, 0.06 + s * 0.03, 0.24, -0.04); l.scale.set(1.4, 0.35, 0.8); l.rotation.z = s * 0.45; }
 }
+
+// ~130 primitives -> one vertex-coloured mesh per joint (~17 draw calls instead of ~200 with shadows)
+bakeRig(avatar, [J.hips, J.spine, J.head, J.eyes, J.mouth, J.bucket, J.basket, J.L.hip, J.L.knee, J.L.foot, J.R.hip, J.R.knee, J.R.foot, J.LA.sh, J.LA.el, J.RA.sh, J.RA.el]);
 
 // ---------------------------------------------------------------- physics: two stacked spheres, never rotates
 export const body = new CANNON.Body({ mass: 45, fixedRotation: true, linearDamping: 0 });

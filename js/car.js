@@ -10,6 +10,7 @@ import { maskAt } from './worldmap.js';
 import { WU } from './terrain.js';
 import { smoke, flames } from './effects.js';
 import { sfx } from './audio.js';
+import { mergeByMaterial, meshChildren } from './batch.js';
 
 // ---------------------------------------------------------------- physics (forward = local -x)
 export const chassisBody = new CANNON.Body({ mass: 150 });
@@ -95,6 +96,8 @@ const wheelMeshes = [];
     car.add(w); wheelMeshes.push(w);
   }
 }
+// body parts sharing a material become one mesh (wheels and door keep their own transforms)
+mergeByMaterial(car, meshChildren(car)); mergeByMaterial(doorPivot, meshChildren(doorPivot));
 const EXHAUST_LOCAL = new THREE.Vector3(2.48, -0.15, -0.72);
 
 chassisBody.addEventListener('collide', (e) => {

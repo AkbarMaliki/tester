@@ -28,6 +28,7 @@ js/vegetation.js      rumput, pohon, semak, batu, daun gugur
 js/props.js           lampu, bangku, papan info, diner, bowling, dermaga, huruf
 js/car.js             fisika + model mobil (termasuk pintu), asap/debu/cipratan
 js/player.js          karakter: model, fisika, animasi jalan/lari/lompat, masuk/keluar mobil
+js/batch.js           penggabungan mesh per material (menghemat draw call)
 js/effects.js         partikel, garis angin, kunang-kunang
 js/audio.js           suara sintesis
 js/ui.js              input, jam, panel pengaturan, modal

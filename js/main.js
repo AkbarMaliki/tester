@@ -8,10 +8,11 @@ import { bakeMask, keepOut, LOT } from './worldmap.js';
 import { buildTerrain, buildWater, WU } from './terrain.js';
 import { buildGrass, plantTrees, scatterRocks, scatterGroundLeaves } from './vegetation.js';
 import * as props from './props.js';
-import { updateDriving, syncCar, updateCarEffects } from './car.js';
-import { player, updatePlayer, syncPlayer, camActor, carKeys, carPrompt, zoneOrigin, cheer, initPlayerPhysics } from './player.js';
+import { car, updateDriving, syncCar, updateCarEffects } from './car.js';
+import { avatar, player, updatePlayer, syncPlayer, camActor, carKeys, carPrompt, zoneOrigin, cheer, initPlayerPhysics } from './player.js';
 import { WINDU, updateWind, flies } from './effects.js';
 import { sfx } from './audio.js';
+import { batchStatic, mergeByMaterial, meshChildren } from './batch.js';
 import { updateOrbit, orbitOffset, setActorScale } from './orbit.js';
 import { keys, ui, modalOpen, windEnabled, setPrompt, showHint, updateClockUI, countFrame, setProgress, restoreQuality, setManualHour, setQuality } from './ui.js';
 
@@ -54,6 +55,10 @@ async function build() {
   try { await props.buildLetters(); } catch (err) { console.warn('font failed, skipping letters', err); }
   console.log(`world: ${blades} grass blades, ${veg.trees} trees, ${veg.bushes} bushes, ${veg.leaves} leaves`);
   initPlayerPhysics();
+  // draw-call batching: static props per material + 30 m cell, each physics prop into one mesh per material
+  let merged = batchStatic(scene, [car, avatar, ...dynamics.map(d => d.mesh), ...props.zones.map(z => z.dia)]);
+  for (const d of dynamics) if (!d.mesh.isMesh) merged += mergeByMaterial(d.mesh, meshChildren(d.mesh));
+  console.log(`batching: ${merged} meshes merged away`);
   setProgress(1, 'Siap!');
 }
 

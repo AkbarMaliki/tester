@@ -2,7 +2,7 @@
 // plus HUD buttons (tap = step, hold = continuous) and keys Z/X, -/=, C.
 import { clamp } from './util.js';
 import { CAM_OFFSET } from './config.js';
-import { renderer, scene, sun } from './core.js';
+import { renderer, scene, sun, camera } from './core.js';
 
 const [ox, oy, oz] = CAM_OFFSET;
 const BASE_DIST = Math.hypot(ox, oy, oz);
@@ -51,7 +51,11 @@ export function updateOrbit(dt) {
   // keep the fog band around the car when zoomed out, widen shadows so they don't end on screen
   const z = view.zoom * view.scale, extra = BASE_DIST * (z - 1);
   scene.fog.near = FOG.near + Math.max(extra, 0); scene.fog.far = FOG.far + Math.max(extra, 0);
-  const s = SHADOW * Math.max(z, 1), c = sun.shadow.camera;
+  // everything past the fog is pure sky colour: stop drawing it
+  const far = scene.fog.far + 5;
+  if (Math.abs(camera.far - far) > 2) { camera.far = far; camera.updateProjectionMatrix(); }
+  // shadow box follows the zoom both ways: closer camera -> smaller box (fewer casters, sharper shadows)
+  const s = SHADOW * Math.max(z, 0.6), c = sun.shadow.camera;
   if (Math.abs(c.right - s) > 0.5) { Object.assign(c, { left: -s, right: s, top: s, bottom: -s }); c.updateProjectionMatrix(); }
 }
 
