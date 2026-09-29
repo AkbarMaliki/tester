@@ -4,9 +4,12 @@ Game web 3D bergaya [bruno-simon.com](https://bruno-simon.com): kamu mulai sebag
 
 ## Cara main
 
-Klik dua kali **`start.bat`**. Server lokal akan jalan dan browser terbuka di http://localhost:8765. Butuh Node.js (atau Python sebagai cadangan) dan internet untuk Three.js/cannon-es dari CDN.
+Klik dua kali **`start.bat`**. Saat pertama kali dijalankan, dependency akan diinstall otomatis (butuh internet). Setelah itu server development Vite jalan dan browser terbuka di http://localhost:8765. Setiap kali file disimpan, halaman langsung ter-update. Butuh **Node.js 18+**.
 
-Game ini **tidak bisa** dibuka dengan klik dua kali `index.html` (file://), karena modul JS dan aset dimuat lewat `fetch`. Cara lain: `node server.cjs` atau VS Code Live Server.
+- `start.bat build`: membuat versi produksi di `dist/` (kode di-minify) lalu membuka preview-nya.
+- Lewat terminal: `npm run dev`, `npm run build`, `npm run preview`, `npm run check`.
+
+Game ini **tidak bisa** dibuka dengan klik dua kali `index.html` (file://).
 
 Debug lewat URL: `?jam=17.5` (kunci jam) dan `?kualitas=mid` (auto/high/mid/low).
 
@@ -14,30 +17,38 @@ Debug lewat URL: `?jam=17.5` (kunci jam) dan `?kualitas=mid` (auto/high/mid/low)
 
 ## Struktur file
 
+Kode dibagi per lapisan supaya fitur baru tidak perlu menyentuh banyak file:
+
 ```
-index.html            markup saja (HUD, panel, loader)
-css/style.css         semua style
-js/main.js            entry: bangun dunia + loop
-js/config.js          konstanta (kata TESTER, ukuran dunia, spawn, kamera)
-js/core.js            renderer, kamera, post-processing, lampu, fisika, helper material
-js/shaders.js         memuat file GLSL dari assets/shaders
-js/worldmap.js        layout danau/jalan/rumput -> mask texture
-js/palette.js         siklus siang-malam (baca assets/data/palettes.json)
-js/terrain.js         tanah, heightfield, air
-js/vegetation.js      rumput, pohon, semak, batu, daun gugur
-js/props.js           lampu, bangku, papan info, diner, bowling, dermaga, huruf
-js/car.js             fisika + model mobil (termasuk pintu), asap/debu/cipratan
-js/player.js          karakter: model, fisika, animasi jalan/lari/lompat, masuk/keluar mobil
-js/batch.js           penggabungan mesh per material (menghemat draw call)
-js/effects.js         partikel, garis angin, kunang-kunang
-js/audio.js           suara sintesis
-js/ui.js              input, jam, panel pengaturan, modal
-assets/shaders/*.glsl semua shader
-assets/data/palettes.json  warna per waktu (bisa diedit)
-assets/data/zones.json     isi papan TENTANG/PROYEK/KONTAK/BOWLING (bisa diedit)
-assets/fonts/         font huruf 3D
-server.cjs, start.bat server lokal
+js/main.js            entry: urutan boot + frame loop saja
+js/game/config.js     konstanta game (ukuran dunia, spawn, kamera)
+js/engine/            teknologi umum, bisa dipakai game lain (render, fisika, event, registry fitur, audio)
+js/systems/           layanan gameplay umum (input, titik interaksi "tekan E", kamera, siang-malam)
+js/world/             peta & lingkungan game ini (layout, props, tanah, air, rumput, langit, efek)
+js/entities/          karakter (model.js = tampilan, controller.js = gerak) dan mobil
+js/ui/                HUD, pengaturan, modal
+js/features/          fitur gameplay, satu folder per fitur (contoh: bowling/, template di _template/)
+public/assets/data/*.json    data yang bisa diedit (palet warna, papan info)
+public/assets/shaders/*.glsl semua shader
+tools/check.cjs       cek import & aturan lapisan: npm run check
+vite.config.js        konfigurasi build (base relatif supaya jalan di GitHub Pages)
+.github/workflows/    deploy otomatis ke GitHub Pages
+CLAUDE.md             peta "mau ubah X → edit file Y" untuk AI
+docs/ARCHITECTURE.md  detail modul, urutan loop, daftar event, rencana genre lain
 ```
+
+## Deploy ke GitHub Pages
+
+1. Sekali saja: di GitHub buka **Settings → Pages → Build and deployment → Source**, lalu pilih **GitHub Actions** (bukan "Deploy from a branch").
+2. Klik dua kali **`build.bat`** (atau `build.bat pesan commit`). Script ini:
+   - cek kode dan build (kalau gagal, berhenti tanpa push)
+   - commit semua perubahan
+   - push ke `main`
+3. GitHub Actions (`.github/workflows/deploy.yml`) lalu build ulang dan publish `dist/` ke `https://<username>.github.io/<nama-repo>/`. Progresnya bisa dilihat di tab **Actions**.
+
+Yang dipublish hanya hasil build (sudah di-minify, tanpa source map). Pages dari repo **private** butuh akun GitHub berbayar. Dengan akun gratis, pakai Netlify atau Cloudflare Pages (build command `npm run build`, folder output `dist`), atau jadikan repo publik. Kode yang jalan di browser selalu bisa dilihat orang, jadi **jangan pernah menaruh API key atau secret di `js/` atau `public/`**.
+
+**Menambah fitur** (misalnya memancing): salin `js/features/_template/` ke `js/features/fishing/`, lalu daftarkan di `js/features/index.js`. Langkah lengkapnya ada di `js/features/README.md`.
 
 | Tombol (jalan kaki) | Aksi |
 |---|---|
