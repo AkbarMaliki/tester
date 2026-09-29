@@ -1,0 +1,20 @@
+{
+  "_comment": "Notice boards with a white diamond. x/z = position, rot = rotation (radians), html = panel content. action 'resetBowling' resets the pins instead of opening a panel.",
+  "boards": [
+    {
+      "x": -11, "z": -9, "rot": 0.62, "title": "TENTANG",
+      "html": "<h2>Tentang</h2><p>Dunia kecil yang bisa dijelajahi dengan mobil — terinspirasi dari <a href=\"https://bruno-simon.com\" target=\"_blank\" rel=\"noopener\">bruno-simon.com</a>.</p><p>Three.js (shader rumput, daun, air, siklus siang-malam, bloom, tilt-shift) + cannon-es (fisika kendaraan &amp; heightfield). Semua model dibuat dari kode, suara disintesis WebAudio.</p>"
+    },
+    {
+      "x": 11, "z": -10, "rot": 0.62, "title": "PROYEK",
+      "html": "<h2>Proyek</h2><ul><li><a href=\"../poker-ai/index.html\">Poker 3D</a> — Texas Hold'em Three.js + Firebase</li><li><a href=\"../monopoly-ai/index.html\">Monopoli Indonesia 3D</a> — multiplayer + bot</li><li><a href=\"../tetris-ai/\">Tetris AI</a></li><li><a href=\"../chess-ai/\">Chess AI</a></li><li>Frontier Dominion — RTS browser</li></ul>"
+    },
+    {
+      "x": 33, "z": 12, "rot": 0.62, "title": "KONTAK",
+      "html": "<h2>Kontak</h2><p>Ganti bagian ini dengan email / sosial media kamu (edit <code>assets/data/zones.json</code>).</p>"
+    },
+    {
+      "x": -17, "z": 36, "rot": 0.62, "title": "BOWLING", "label": "Reset pin bowling", "action": "resetBowling"
+    }
+  ]
+}
