@@ -113,20 +113,21 @@ function buildLeaves() {
   }
   return n;
 }
+export const canopies = [];   // {x, z, r} of every tree/bush crown, filled by plantTrees (things that must stay visible from above avoid them)
 export function plantTrees() {
   const trees = [];
   for (let i = 0; i < 3000 && trees.length < 62; i++) {
     const x = rand(-88, 88), z = rand(-88, 88), m = maskAt(x, z);
     if (m.d < 3 || m.paved > 0.05 || m.asphalt > 0.05 || (m.grass < 0.25 && rnd() < 0.7)) continue;
     if (keepOut.some(k => Math.hypot(x - k.x, z - k.z) < k.r + 2.5) || trees.some(t => Math.hypot(t.x - x, t.z - z) < 5.5)) continue;
-    trees.push({ x, z }); tree(x, z);
+    trees.push({ x, z }); canopies.push({ x, z, r: 3.6 }); tree(x, z);
   }
   let bushes = 0;
   for (let i = 0; i < 3000 && bushes < 90; i++) {
     const x = rand(-88, 88), z = rand(-88, 88), m = maskAt(x, z);
     if (m.d < 1.5 || m.paved > 0.3 || m.asphalt > 0.05) continue;
     if (keepOut.some(k => Math.hypot(x - k.x, z - k.z) < k.r + 1) || trees.some(t => Math.hypot(t.x - x, t.z - z) < 2.5)) continue;
-    bush(x, z); bushes++;
+    bush(x, z); canopies.push({ x, z, r: 1.6 }); bushes++;
   }
   return { trees: trees.length, bushes, leaves: buildLeaves() };
 }

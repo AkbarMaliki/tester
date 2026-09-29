@@ -7,9 +7,11 @@ import { respawn, unflip, isUpsideDown } from '../entities/car/car.js';
 import { player, toggleCar, respawnPlayer } from '../entities/player/controller.js';
 import { sfx } from '../engine/audio.js';
 import { keys, KEYMAP, clearKeys, dispatchKey } from '../systems/input.js';
+import { on } from '../engine/events.js';
 
 export const ui = { started: false, activeZone: null };
-export const modalOpen = () => $('modal').classList.contains('show');
+// any panel that pauses gameplay input (the info modal, the inventory from ui/inventory.js)
+export const modalOpen = () => ['modal', 'inventory', 'pause'].some(id => $(id).classList.contains('show'));
 export const windEnabled = () => $('optWind').checked;
 
 // ---------------------------------------------------------------- modal + zones
@@ -21,7 +23,7 @@ function doRespawn() { if (player.mode === 'car') { if (isUpsideDown()) unflip()
 
 // hint line under the screen, swapped between on-foot and driving controls
 const HINTS = {
-  foot: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> / <kbd>E</kbd> masuk mobil · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera',
+  foot: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera',
   car: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = setir · <kbd>Shift</kbd> boost · <kbd>Space</kbd> rem · <kbd>H</kbd> klakson · <kbd>F</kbd> keluar mobil · <kbd>R</kbd> reset',
 };
 let hintTimer = 0;
@@ -64,13 +66,22 @@ $('modalClose').onclick = closeModal;
 $('modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
 $('prompt').onclick = () => ui.activeZone && openZone(ui.activeZone);
 $('respawnBtn').onclick = doRespawn;
+
+// short message stacked above the bag button, e.g. "+1 Apel" (html allowed)
+export function toast(html, icon) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = (icon ? `<img src="${icon}" alt="">` : '') + `<span>${html}</span>`;
+  $('toasts').prepend(el);
+  while ($('toasts').children.length > 4) $('toasts').lastChild.remove();
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 1800);
+}
 $('carBtn').onclick = () => { if (ui.started && !modalOpen()) toggleCar(); };
 function toggleMute() {
   const m = sfx.toggle();
   $('muteIcon').innerHTML = m ? '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6"/>' : '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>';
 }
 $('muteBtn').onclick = toggleMute;
-$('menuBtn').onclick = () => openModal($('controlsTemplate').innerHTML);
 
 // ---------------------------------------------------------------- time + settings panel
 $('clock').onclick = () => $('settings').classList.toggle('show');
@@ -82,6 +93,11 @@ $('realTime').onchange = (e) => { time.real = e.target.checked; $('speedSel').di
 $('hourSlider').oninput = (e) => setManualHour(parseFloat(e.target.value));
 $('speedSel').onchange = (e) => { time.speed = parseFloat(e.target.value); };
 $('speedSel').disabled = true;
+// a loaded save / new game changed the clock: mirror it in the panel
+on('save:applied', () => {
+  $('realTime').checked = time.real; $('speedSel').disabled = time.real;
+  if ([...$('speedSel').options].some(o => +o.value === time.speed)) $('speedSel').value = String(time.speed);
+});
 document.querySelectorAll('#settings .presets button').forEach(b => { b.onclick = () => setManualHour(parseFloat(b.dataset.h)); });
 
 export function setQuality(q, remember = true) {

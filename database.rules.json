@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "tester-saves": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "meta": { "$slot": { ".validate": "$slot.matches(/^(auto|slot[1-3])$/)" } },
+        "slots": { "$slot": { ".validate": "newData.isString() && newData.val().length < 2000000" } }
+      }
+    }
+  }
+}

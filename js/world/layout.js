@@ -2,7 +2,8 @@
 // Move/add park furniture here; self-contained gameplay (bowling, fishing...) belongs in js/features/.
 import { MAX_LAMPS } from '../game/config.js';
 import { nextFrame, loadAsset } from '../engine/util.js';
-import { U } from '../engine/core.js';
+import { U, dynamics, resetDynamic } from '../engine/core.js';
+import { registerSave } from '../systems/save.js';
 import { bakeMask, keepOut, LOT } from './worldmap.js';
 import { buildTerrain, buildWater } from './terrain.js';
 import { buildGrass, plantTrees, scatterRocks, scatterGroundLeaves } from './vegetation.js';
@@ -46,3 +47,21 @@ export async function buildWorld(progress, placeFeatures) {
   try { await props.buildLetters(); } catch (err) { console.warn('font failed, skipping letters', err); }
   console.log(`world: ${blades} grass blades, ${veg.trees} trees, ${veg.bushes} bushes, ${veg.leaves} leaves`);
 }
+
+// pushable props (letters, crates, bowling pins…): position + rotation by build order.
+// If the world changed since the save (different count), they simply start at home.
+const r3 = (v) => Math.round(v * 1000) / 1000;
+registerSave('props', {
+  save: () => dynamics.map(({ body: { position: p, quaternion: q } }) => [p.x, p.y, p.z, q.x, q.y, q.z, q.w].map(r3)),
+  load(d) {
+    if (d.length !== dynamics.length) { resetDynamic(dynamics); return; }
+    dynamics.forEach(({ body: b }, i) => {
+      const [x, y, z, qx, qy, qz, qw] = d[i];
+      b.position.set(x, y, z); b.quaternion.set(qx, qy, qz, qw).normalize();
+      b.previousPosition.copy(b.position); b.interpolatedPosition.copy(b.position);
+      b.previousQuaternion.copy(b.quaternion); b.interpolatedQuaternion.copy(b.quaternion);
+      b.velocity.setZero(); b.angularVelocity.setZero(); b.wakeUp();
+    });
+  },
+  reset: () => resetDynamic(dynamics),
+});

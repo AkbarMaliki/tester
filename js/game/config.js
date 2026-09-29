@@ -8,3 +8,16 @@ export const PLAYER_SPAWN = { x: 1, z: 9.8, yaw: 0.6 };   // the kid starts next
 export const CAM_OFFSET = [12.5, 17, 16.5];   // isometric-ish follow camera
 // runtime files in public/assets/, resolved from the page URL so it works in dev, in the build and under a sub-path (GitHub Pages)
 export const ASSETS = new URL('assets/', document.baseURI).href;
+
+// Cloud saves: Firebase Realtime Database over REST (engine/firebase.js + systems/save.js).
+// Values come from .env.local (git-ignored, template in .env.example); without them saves stay on this device.
+// Note: Vite inlines VITE_* values into the shipped bundle. The Firebase web config is a project identifier, not a
+// password: the data is protected by the database rules (database.rules.json) + Anonymous sign-in.
+const env = import.meta.env || {};
+export const FIREBASE = {
+  apiKey: env.VITE_FIREBASE_API_KEY || '',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || '',
+  databaseURL: env.VITE_FIREBASE_DATABASE_URL || '',
+};
+export const SAVE_ROOT = 'tester-saves';      // database node: <SAVE_ROOT>/<player id>/{meta,slots}/<slot>
+export const AUTOSAVE_EVERY = 180;            // seconds of play between autosaves

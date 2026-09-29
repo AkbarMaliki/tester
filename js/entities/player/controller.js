@@ -11,6 +11,7 @@ import { car, chassisBody, drive, setDoor, isUpsideDown, unflip } from '../car/c
 import { smoke } from '../../world/effects.js';
 import { sfx } from '../../engine/audio.js';
 import { avatar, squash, J, HIP_Y } from './model.js';
+import { registerSave } from '../../systems/save.js';
 
 export { avatar };
 const WALK = 3.4, RUN = 7, JUMP = 6.2;
@@ -44,7 +45,7 @@ function probeGround(x, z, fromY) {
 export const player = { mode: 'foot', wantExit: false };
 const st = {
   t: 0, yaw: PLAYER_SPAWN.yaw, phase: 0, hs: 0, grounded: true, lastGround: 0, jumpBuf: -1, prevJump: 0, airVy: 0,
-  stretch: 0, squash: 0, airW: 0, cheer: 0, idleT: 0, blink: 3, blinkT: 0, inWater: false,
+  stretch: 0, squash: 0, airW: 0, cheer: 0, carry: false, carryW: 0, idleT: 0, blink: 3, blinkT: 0, inWater: false,
   path: [], seqT: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), door: 0, doorGoal: 0,
 };
 export const isDriving = () => player.mode === 'car';
@@ -57,6 +58,41 @@ export function placePlayer(x, z, yaw) {
 }
 export function respawnPlayer() { if (onFoot()) { player.mode = 'foot'; placePlayer(PLAYER_SPAWN.x, PLAYER_SPAWN.z, PLAYER_SPAWN.yaw); sfx.pop(); } }
 export const cheer = () => { if (onFoot()) st.cheer = 1.8; };
+
+// ---------------------------------------------------------------- carrying (Harvest Moon style: one item held over the head)
+// Features parent the held item's mesh to `carry` (origin = on top of the raised hands, item base at y = 0)
+// and call setCarrying(true/false); the kid squats to lift, then walks with both arms up.
+export const carry = new THREE.Group();
+avatar.updateMatrixWorld(true);
+carry.position.set(0, new THREE.Box3().setFromObject(J.head).max.y - avatar.position.y - HIP_Y - 0.1 + 0.02, 0.04);
+J.spine.add(carry);
+export function setCarrying(on) {
+  if (on === st.carry) return;
+  st.carry = on; st.cheer = 0; st.idleT = 0;
+  if (onFoot()) st.squash = Math.max(st.squash, 0.55);   // bend the knees to lift / set down
+}
+export const isCarrying = () => st.carry;
+
+// ---------------------------------------------------------------- save / load (on foot or sitting in the car)
+// Mid-sequence states are saved as their end state: walking to the door = on foot, climbing in/out = in the car.
+function restore(inCar, x, z, yaw) {
+  const inWorld = world.bodies.includes(body);
+  player.wantExit = false; st.path = []; st.seqT = 0; st.door = st.doorGoal = 0; setDoor(0);
+  st.cheer = 0; st.squash = st.stretch = 0; body.velocity.setZero();
+  if (inCar) { if (inWorld) world.removeBody(body); player.mode = 'car'; avatar.visible = false; return; }
+  if (!inWorld) world.addBody(body);
+  player.mode = 'foot'; avatar.visible = true; st.grounded = true;
+  placePlayer(x, z, yaw);
+}
+registerSave('player', {
+  save: () => ({
+    inCar: player.mode === 'car' || player.mode === 'enter' || player.mode === 'exit',
+    x: +body.position.x.toFixed(3), z: +body.position.z.toFixed(3), yaw: +st.yaw.toFixed(3),
+  }),
+  load: (d) => restore(d.inCar, d.x, d.z, d.yaw),
+  reset: () => restore(false, PLAYER_SPAWN.x, PLAYER_SPAWN.z, PLAYER_SPAWN.yaw),
+  summary: (d) => (d.inCar ? 'di mobil' : ''),
+});
 placePlayer(PLAYER_SPAWN.x, PLAYER_SPAWN.z, PLAYER_SPAWN.yaw);
 
 // ---------------------------------------------------------------- helpers (car frame: forward = -x, driver door on -z)
@@ -260,7 +296,7 @@ export function syncPlayer(dt) {
   }
   // idle -> an occasional fist pump like the concept art
   st.idleT = foot && grounded && walkW < 0.1 ? st.idleT + dt : 0;
-  if (st.idleT > 9) { st.cheer = 1.8; st.idleT = 0; }
+  if (st.idleT > 9 && !st.carry) { st.cheer = 1.8; st.idleT = 0; }
   if (walkW > 0.3 || !grounded) st.cheer = 0;
   st.cheer = Math.max(0, st.cheer - dt);
   st.squash = Math.max(0, st.squash - dt * 4); st.stretch = Math.max(0, st.stretch - dt * 4);
@@ -304,6 +340,17 @@ export function syncPlayer(dt) {
     mix('lShX', 0.25, cw); mix('lShZ', 0.8, cw); mix('lElX', 0, cw); mix('lElZ', -1.6, cw);
     G.hipsY += Math.abs(Math.sin(st.cheer * 7)) * 0.035 * cw; G.headX -= 0.12 * cw; G.spineZ = 0.06 * cw; G.mouth += 0.6 * cw;
   }
+  // --- carrying: both hands up holding the item over the head, arms barely swing
+  st.carryW += ((st.carry && avatar.visible ? 1 : 0) - st.carryW) * (1 - Math.exp(-dt * 12));
+  const hw = st.carryW;
+  if (hw > 0.01) {
+    const sway = s * 0.05 * walkW;
+    mix('lShX', -0.2 + sway, hw); mix('lShZ', 2.75, hw); mix('lElX', 0, hw); mix('lElZ', 0.4, hw);
+    mix('rShX', -0.2 - sway, hw); mix('rShZ', -2.75, hw); mix('rElX', 0, hw); mix('rElZ', -0.4, hw);
+    mix('spineX', G.spineX * 0.4 - 0.04, hw); mix('headX', -0.08, hw); mix('headY', 0, hw * 0.6);
+  }
+  carry.rotation.z = -G.spineZ; carry.rotation.x = -G.spineX * 0.8;   // keep the item roughly level
+
   // --- car door: reach for the handle, then climb (enter) / hop down (exit)
   if (player.mode === 'enter' || player.mode === 'exit') {
     const T = st.seqT, enter = player.mode === 'enter';

@@ -22,6 +22,9 @@ Browser 3D game: three.js 0.169 + cannon-es 0.20 (npm, pinned), plain ES modules
 | grass, trees, rocks, leaves | `js/world/vegetation.js` (+ `public/assets/shaders/grass|leaves.*.glsl`) |
 | day/night colours | `public/assets/data/palettes.json` (data), `js/systems/daynight.js` (clock), `js/world/sky.js` (applies it) |
 | notice board texts / positions | `public/assets/data/zones.json` |
+| pickable items (list, model, where they spawn), holding over the head | `public/assets/data/items.json` + `js/features/pickup/` (models in `models.js`) |
+| bag / inventory data (slots, stacks, add/remove items) · bag panel & button | `js/systems/inventory.js` · `js/ui/inventory.js` |
+| save / load, slots, autosave, Firebase cloud · main menu & pause menu | `js/systems/save.js` (+ `js/engine/firebase.js`, config in `.env.local`) · `js/ui/menu.js` |
 | "press E here" spots | `js/systems/interaction.js` → `addZone()` |
 | keys / controls | `js/systems/input.js` (`keys`, `onKey()`), DOM listeners + HUD in `js/ui/ui.js`, markup in `index.html`, style in `css/style.css` |
 | camera follow / orbit / zoom | `js/systems/camera.js` |
@@ -52,6 +55,7 @@ main.js                   (6)  boot + frame loop
 - Models are built from primitives with `mesh(geo, lam('#hex'), parent, x, y, z)` (flat-shaded low-poly). Tiny details skip shadows (`cast = false`). Static props get batched automatically.
 - Physics: `addStatic(shape, …)` for scenery, `addDynamic(mesh, body)` for pushable things (synced and respawned by main.js).
 - Anything placed on the ground pushes `{x, z, r}` into `keepOut` (world/worldmap.js) during the build phase so grass and trees avoid it.
+- **Any state the player would expect to keep** (new feature data, stats, world changes) gets a save slice: `registerSave('<name>', { version, save, load, reset, summary? })` in the module that owns it (`ARCHITECTURE.md` > Save games). Change the data shape = bump `version` + add `migrate()`.
 - Tunables sit at the top of a file as constants, or in `public/assets/data/*.json` loaded with `loadAsset()`.
 - Don't add npm packages or frameworks without asking.
 - Never put secrets (API keys, tokens) in client code: everything in `js/` and `public/` ships to the browser. Anything that must not be faked (scores, purchases, multiplayer results) needs a server.

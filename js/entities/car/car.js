@@ -11,6 +11,7 @@ import { WU } from '../../world/terrain.js';
 import { smoke, flames } from '../../world/effects.js';
 import { sfx } from '../../engine/audio.js';
 import { mergeByMaterial, meshChildren } from '../../engine/batch.js';
+import { registerSave } from '../../systems/save.js';
 
 // ---------------------------------------------------------------- physics (forward = local -x)
 export const chassisBody = new CANNON.Body({ mass: 150 });
@@ -120,6 +121,17 @@ export function unflip() {
   placeCar(p, Math.atan2(fwd.z, -fwd.x));
 }
 placeCar(SPAWN, SPAWN.yaw);
+
+const r3 = (v) => Math.round(v * 1000) / 1000;
+registerSave('car', {
+  save: () => { const p = chassisBody.position, q = chassisBody.quaternion; return { p: [p.x, p.y, p.z].map(r3), q: [q.x, q.y, q.z, q.w].map(r3) }; },
+  load({ p, q }) {
+    placeCar({ x: p[0], y: p[1] + 0.05, z: p[2] }, 0);
+    chassisBody.quaternion.set(q[0], q[1], q[2], q[3]).normalize();
+    chassisBody.previousQuaternion.copy(chassisBody.quaternion); chassisBody.interpolatedQuaternion.copy(chassisBody.quaternion);
+  },
+  reset: () => placeCar(SPAWN, SPAWN.yaw),
+});
 
 // ---------------------------------------------------------------- driving
 export const drive = { throttle: 0, braking: false, boosting: false, speed: 0, fwdSpeed: 0, inWater: false, engineOn: true };

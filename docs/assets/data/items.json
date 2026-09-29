@@ -1,0 +1,21 @@
+{
+  "_help": "Pickable items. model = builder in js/features/pickup/models.js. stack = max per bag slot. price = future shop value (G). spawn.where: grass (open land, off the paths) | shore (next to a lake) | land (anywhere dry). spawn.count = how many lie in the world at once, spawn.respawn = seconds before a picked one grows back somewhere else.",
+  "items": [
+    { "id": "apel", "name": "Apel", "desc": "Apel merah yang renyah, jatuh dari pohon di taman.", "model": "apple", "stack": 30, "price": 50,
+      "spawn": { "where": "grass", "count": 7, "respawn": 90 } },
+    { "id": "jamur", "name": "Jamur", "desc": "Jamur topi merah berbintik. Katanya enak dibuat sup.", "model": "mushroom", "stack": 30, "price": 70,
+      "spawn": { "where": "grass", "count": 6, "respawn": 120 } },
+    { "id": "bunga", "name": "Bunga Kuning", "desc": "Bunga liar yang harum. Cocok jadi hadiah.", "model": "flower", "stack": 30, "price": 30,
+      "spawn": { "where": "grass", "count": 8, "respawn": 60 } },
+    { "id": "beri", "name": "Buah Beri", "desc": "Segenggam beri ungu yang manis dan asam.", "model": "berry", "stack": 30, "price": 40,
+      "spawn": { "where": "grass", "count": 5, "respawn": 100 } },
+    { "id": "telur", "name": "Telur", "desc": "Telur segar. Entah ayam siapa yang bertelur di sini…", "model": "egg", "stack": 20, "price": 60,
+      "spawn": { "where": "grass", "count": 3, "respawn": 180 } },
+    { "id": "kerang", "name": "Kerang", "desc": "Kerang cantik dari tepi danau.", "model": "shell", "stack": 30, "price": 80,
+      "spawn": { "where": "shore", "count": 6, "respawn": 150 } },
+    { "id": "batu", "name": "Batu", "desc": "Batu kecil. Berguna untuk membangun sesuatu nanti.", "model": "stone", "stack": 99, "price": 5,
+      "spawn": { "where": "land", "count": 7, "respawn": 60 } },
+    { "id": "ranting", "name": "Ranting", "desc": "Ranting kering. Bahan kayu bakar atau pagar.", "model": "branch", "stack": 99, "price": 5,
+      "spawn": { "where": "grass", "count": 7, "respawn": 60 } }
+  ]
+}

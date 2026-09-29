@@ -6,7 +6,6 @@ import { scene, composer, world, U, dynamics, adaptResolution } from './engine/c
 import { emit } from './engine/events.js';
 import { registerFeatures, buildFeatures, updateFeatures } from './engine/features.js';
 import { batchStatic, mergeByMaterial, meshChildren } from './engine/batch.js';
-import { sfx } from './engine/audio.js';
 import { paletteAt, advanceTime, time } from './systems/daynight.js';
 import { keys } from './systems/input.js';
 import { zones, updateZones } from './systems/interaction.js';
@@ -17,9 +16,13 @@ import { updateWind } from './world/effects.js';
 import { car, updateDriving, syncCar, updateCarEffects } from './entities/car/car.js';
 import { avatar, player, updatePlayer, syncPlayer, camActor, carKeys, carPrompt, zoneOrigin, cheer, initPlayerPhysics } from './entities/player/controller.js';
 import { ui, modalOpen, windEnabled, setPrompt, showHint, updateClockUI, countFrame, setProgress, restoreQuality, setManualHour, setQuality } from './ui/ui.js';
+import { initInventoryUI } from './ui/inventory.js';
+import { initMenu, autoStart } from './ui/menu.js';
+import { updateSave } from './systems/save.js';
 import features from './features/index.js';
 
 registerFeatures(features);
+initInventoryUI();
 
 // ---------------------------------------------------------------- build
 async function build() {
@@ -68,31 +71,31 @@ export function tick() {
 
   composer.render();
   adaptResolution();
+  updateSave(dt, active);
   countFrame(dt);
   requestAnimationFrame(tick);
 }
 
-$('start').onclick = () => {
-  sfx.init(); sfx.pop();
+// called by the main menu (ui/menu.js) once a new game is set up or a save is loaded
+const params = new URLSearchParams(location.search);
+function startGame({ fresh }) {
+  // debug via URL: ?jam=17.5 fixes the hour of a new game
+  if (fresh && params.has('jam')) { setManualHour(parseFloat(params.get('jam')) % 24); $('speedSel').value = '0'; time.speed = 0; }
   ui.started = true;
-  $('loader').style.opacity = 0;
-  setTimeout(() => $('loader').remove(), 800);
-  showHint(false, 12000);
-  cheer();
+  showHint(player.mode === 'car', 12000);
+  if (fresh) cheer();
   emit('game:start');
-};
+}
 
 build().then(() => {
   restoreQuality();
-  // debug via URL: ?jam=17.5 (fixed hour), ?kualitas=mid
-  const params = new URLSearchParams(location.search);
-  if (params.has('jam')) { setManualHour(parseFloat(params.get('jam')) % 24); $('speedSel').value = '0'; time.speed = 0; }
+  // debug via URL: ?kualitas=mid
   if (params.has('kualitas')) { $('qualitySel').value = params.get('kualitas'); setQuality(params.get('kualitas')); }
   snapCamera();
-  $('start').style.display = 'block';
   window.__tester = { tick, camTarget, player };   // handle for automated screenshot tests
   emit('world:ready');
-  if (location.hash === '#auto') $('start').click();
+  initMenu(startGame);
+  if (location.hash === '#auto') autoStart();
   tick();
 }).catch((err) => {
   console.error(err);

@@ -72,5 +72,31 @@ export const sfx = {
     g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
     o.connect(g).connect(master); o.start(t); o.stop(t + 0.3);
   },
+  // item lifted up (quick rising chirp)
+  pick() {
+    if (!ctx) return; const t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'triangle';
+    o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(1100, t + 0.1);
+    g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g).connect(master); o.start(t); o.stop(t + 0.18);
+  },
+  // item put in the bag (two-note jingle)
+  stash() {
+    if (!ctx) return; const t = ctx.currentTime;
+    [[660, 0], [990, 0.08]].forEach(([f, d]) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'square';
+      o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.06, t + d + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.14);
+      o.connect(g).connect(master); o.start(t + d); o.stop(t + d + 0.16);
+    });
+  },
+  // item set down / refused (low soft thud)
+  drop() {
+    if (!ctx) return; const t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.12);
+    g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g).connect(master); o.start(t); o.stop(t + 0.18);
+  },
   toggle() { if (!ctx) return false; muted = !muted; master.gain.value = muted ? 0 : 0.55; return muted; },
 };

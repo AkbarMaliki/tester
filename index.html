@@ -18,8 +18,19 @@
   <h1 class="amatic">TESTER</h1>
   <p class="amatic" id="loadText">Memuat dunia…</p>
   <div id="bar"><i></i></div>
-  <button id="start" class="amatic">MULAI</button>
+  <div id="mainMenu">
+    <div class="mm-buttons">
+      <button class="amatic" data-mm="new">Main Baru</button>
+      <button class="amatic" data-mm="continue" id="mmContinue">Lanjutkan<small id="mmContinueInfo"></small></button>
+      <button class="amatic" data-mm="load">Muat Game</button>
+      <button class="amatic" data-mm="exit">Keluar</button>
+    </div>
+    <div class="mm-panel" id="mmPanel"></div>
+    <p class="save-status" id="mmStatus"></p>
+  </div>
 </div>
+
+<div id="pause"><div class="pause-card"><div id="pauseBody"></div></div></div>
 
 <div id="clock" title="Pengaturan waktu">
   <svg viewBox="0 0 100 56">
@@ -70,8 +81,30 @@
   <button data-cam="reset" title="Reset kamera (C / klik ganda)"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg></button>
 </div>
 
+<div id="bagBtn" title="Tas (I)">
+  <svg viewBox="0 0 32 32"><path class="strap" d="M11 10V8a5 5 0 0 1 10 0v2"/><path class="body" d="M6.5 12.5c0-1.7 1.3-3 3-3h13c1.7 0 3 1.3 3 3l1 13c.1 1.8-1.3 3.3-3 3.3H8.5c-1.7 0-3.1-1.5-3-3.3z"/><path class="flap" d="M6.8 15.5c4.5 2.2 13.9 2.2 18.4 0"/><rect class="buckle" x="13.8" y="15.8" width="4.4" height="4" rx="1"/></svg>
+  <b id="bagCount"></b>
+</div>
+<div id="toasts"></div>
+
+<div id="inventory">
+  <div class="inv-card">
+    <div class="inv-head"><h2 class="amatic">Tas</h2><span class="inv-cap" id="invCap"></span><button class="inv-x" id="invClose" title="Tutup (I / Esc)">✕</button></div>
+    <div class="inv-body">
+      <div>
+        <div class="inv-grid" id="invGrid"></div>
+        <p class="inv-tip">Klik untuk memilih · seret untuk memindah</p>
+      </div>
+      <div class="inv-side">
+        <div class="inv-hand"><span>Di tangan</span><div class="slot" id="invHand"></div></div>
+        <div class="inv-detail" id="invDetail"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="prompt" class="amatic"></div>
-<div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> / <kbd>E</kbd> masuk mobil · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera</div>
+<div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera</div>
 
 <div id="modal"><div class="card"><div id="modalBody"></div><button class="close" id="modalClose">Tutup</button></div></div>
 
@@ -83,6 +116,10 @@
     <tr><td><kbd>Shift</kbd></td><td>Lari</td></tr><tr><td><kbd>Space</kbd></td><td>Lompat</td></tr>
     <tr><td><kbd>F</kbd> / <kbd>E</kbd></td><td>Masuk mobil (dekati mobil dulu)</td></tr>
     <tr><td><kbd>R</kbd></td><td>Kembali ke titik awal</td></tr>
+    <tr><td colspan="2"><b>Barang</b></td></tr>
+    <tr><td><kbd>E</kbd></td><td>Ambil barang (diangkat di atas kepala), <kbd>E</kbd> lagi = simpan ke tas</td></tr>
+    <tr><td><kbd>Q</kbd></td><td>Taruh barang yang dipegang ke tanah</td></tr>
+    <tr><td><kbd>I</kbd> / ikon tas</td><td>Buka tas: pilih barang lalu Pegang / Buang, seret untuk memindah</td></tr>
     <tr><td colspan="2"><b>Di mobil</b></td></tr>
     <tr><td><kbd>W</kbd><kbd>↑</kbd></td><td>Maju</td></tr><tr><td><kbd>S</kbd><kbd>↓</kbd></td><td>Mundur</td></tr>
     <tr><td><kbd>A</kbd><kbd>D</kbd></td><td>Belok</td></tr><tr><td><kbd>Shift</kbd></td><td>Boost</td></tr>
@@ -90,6 +127,7 @@
     <tr><td><kbd>H</kbd></td><td>Klakson</td></tr><tr><td><kbd>R</kbd></td><td>Balikkan mobil / respawn</td></tr>
     <tr><td colspan="2"><b>Umum</b></td></tr>
     <tr><td><kbd>E</kbd></td><td>Interaksi (berlian putih)</td></tr>
+    <tr><td><kbd>Esc</kbd> / tombol ☰</td><td>Menu jeda: simpan game, muat game, kembali ke menu utama</td></tr>
     <tr><td><kbd>T</kbd></td><td>Panel waktu &amp; pengaturan</td></tr><tr><td><kbd>[</kbd><kbd>]</kbd></td><td>Geser jam ±1</td></tr>
     <tr><td><kbd>M</kbd></td><td>Suara on/off</td></tr>
     <tr><td>Drag mouse / jari</td><td>Putar kamera</td></tr><tr><td>Scroll / cubit</td><td>Zoom kamera</td></tr>
