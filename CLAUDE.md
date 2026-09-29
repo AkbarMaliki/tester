@@ -3,7 +3,7 @@
 Browser 3D game: three.js 0.169 + cannon-es 0.20 (npm, pinned), plain ES modules bundled by **Vite** (`vite.config.js`). No framework: the game renders to a canvas and the HUD is plain DOM in `index.html`. This repo is also the **base template** for future games (farming sim, RPG, co-op cooking, RTS…), so keep `engine/` and `systems/` game-agnostic.
 
 - Run: `start.bat` (= `npx vite`, auto-reload) → http://localhost:8765. `start.bat build` = production build + preview. URL flags: `?jam=17.5` fixes the hour, `?kualitas=low|mid|high|auto`, `#auto` skips the start button.
-- Build: `npm run build` → `dist/` (runs the checker first). Deploy: `build.bat [commit message]` = build, `git add -A`, commit, push `main`; then `.github/workflows/deploy.yml` publishes `dist/` to GitHub Pages. Don't run build.bat yourself unless asked (it pushes).
+- Build: `npm run build` → `docs/` (runs the checker first). `docs/` is **generated and committed**: GitHub Pages serves `main` `/docs`. Never hand-edit it or put docs there. Deploy: `build.bat [commit message]` = build, `git add -A`, commit, push `main`. Don't run build.bat yourself unless asked (it pushes).
 - Runtime files (JSON, GLSL, fonts) live in `public/assets/` and are fetched with `loadAsset('data/x.json')` (path relative to `public/assets/`). Don't `import` them.
 - **After every change run `node tools/check.cjs`**: it verifies imports/exports and the layer rules below.
 - UI text is Indonesian; code comments are English.
@@ -31,7 +31,7 @@ Browser 3D game: three.js 0.169 + cannon-es 0.20 (npm, pinned), plain ES modules
 | world size, spawn points, camera offset | `js/game/config.js` |
 | frame loop order / boot order | `js/main.js` (keep it thin: it only orders calls) |
 
-Module list with every export, the frame loop, and the event list: `docs/ARCHITECTURE.md`.
+Module list with every export, the frame loop, and the event list: `ARCHITECTURE.md`.
 
 ## Layers (enforced by tools/check.cjs)
 

@@ -1,7 +1,7 @@
 @echo off
 rem Jalankan game untuk development (Vite, auto-reload saat file disimpan).
 rem   start.bat          -> mode development di http://localhost:8765
-rem   start.bat build    -> build versi produksi (dist/) lalu buka preview-nya
+rem   start.bat build    -> build versi produksi (docs/) lalu buka preview-nya
 cd /d "%~dp0"
 
 where node >nul 2>nul

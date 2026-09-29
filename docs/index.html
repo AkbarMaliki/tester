@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Tester Drive World</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:,">
+  <script type="module" crossorigin src="./assets/index-DE4AMWSg.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-VGDa5wqZ.css">
+</head>
+<body>
+<div id="app"></div>
+<div id="vignette"></div>
+
+<div id="loader">
+  <h1 class="amatic">TESTER</h1>
+  <p class="amatic" id="loadText">Memuat dunia…</p>
+  <div id="bar"><i></i></div>
+  <button id="start" class="amatic">MULAI</button>
+</div>
+
+<div id="clock" title="Pengaturan waktu">
+  <svg viewBox="0 0 100 56">
+    <path d="M6 50 A44 44 0 0 1 94 50" stroke="#ffffff40" stroke-width="2" stroke-dasharray="3 4" fill="none"/>
+    <line x1="0" y1="50" x2="100" y2="50" stroke="#ffffff66" stroke-width="2"/>
+    <g id="skyIcon"></g>
+  </svg>
+  <div class="t amatic"><span id="clockTime">00:00</span><span id="clockLabel">Malam</span></div>
+  <div class="gear"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></div>
+</div>
+
+<div id="settings">
+  <h3 class="amatic">Pengaturan</h3>
+  <label><input type="checkbox" id="realTime" checked> Ikuti jam asli (<span id="realNow"></span>)</label>
+  <div class="row"><span>Jam</span><input type="range" id="hourSlider" min="0" max="24" step="0.05"><b id="hourVal"></b></div>
+  <div class="row"><span>Kecepatan</span>
+    <select id="speedSel">
+      <option value="0">Berhenti</option>
+      <option value="1">1× (nyata)</option>
+      <option value="60" selected>60× (1 mnt = 1 jam)</option>
+      <option value="600">600×</option>
+      <option value="3600">3600× (1 dtk = 1 jam)</option>
+    </select></div>
+  <div class="presets">
+    <button data-h="5.4">Subuh</button><button data-h="6.6">Fajar</button><button data-h="12">Siang</button>
+    <button data-h="17.6">Sunset</button><button data-h="19">Senja</button><button data-h="23">Malam</button>
+  </div>
+  <hr>
+  <div class="row"><span>Kualitas</span><select id="qualitySel"><option value="auto">Auto (disarankan)</option><option value="high">Tinggi</option><option value="mid">Sedang (laptop)</option><option value="low">Rendah</option></select></div>
+  <label><input type="checkbox" id="optShadow" checked> Bayangan</label>
+  <label><input type="checkbox" id="optBloom" checked> Bloom (cahaya berpendar)</label>
+  <label><input type="checkbox" id="optTilt" checked> Tilt-shift (blur tepi)</label>
+  <label><input type="checkbox" id="optWind" checked> Garis angin</label>
+  <label><input type="checkbox" id="optFps"> Tampilkan FPS</label>
+  <p style="opacity:.6;margin:10px 0 0">Shortcut: <kbd>[</kbd> <kbd>]</kbd> geser jam ±1, <kbd>T</kbd> buka/tutup panel ini.</p>
+</div>
+<div id="fps"></div>
+
+<div class="hudbtn" id="menuBtn" title="Menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+<div class="hudbtn" id="respawnBtn" title="Respawn (R)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/><path d="M5 21h14"/></svg></div>
+<div class="hudbtn" id="muteBtn" title="Suara (M)"><svg viewBox="0 0 24 24" id="muteIcon"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
+
+<div id="camPad" title="Kamera — atau drag layar untuk memutar, scroll untuk zoom">
+  <button data-cam="left" title="Putar kiri (Z)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M6 2.5v4h4"/></svg></button>
+  <button data-cam="right" title="Putar kanan (X)"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M18 2.5v4h-4"/></svg></button>
+  <button data-cam="in" title="Zoom in (+)"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/></svg></button>
+  <button data-cam="out" title="Zoom out (−)"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M7.5 10.5h6"/></svg></button>
+  <button data-cam="reset" title="Reset kamera (C / klik ganda)"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg></button>
+</div>
+
+<div id="prompt" class="amatic"></div>
+<div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> / <kbd>E</kbd> masuk mobil · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera</div>
+
+<div id="modal"><div class="card"><div id="modalBody"></div><button class="close" id="modalClose">Tutup</button></div></div>
+
+<template id="controlsTemplate">
+  <h2>Kontrol</h2>
+  <table class="keys">
+    <tr><td colspan="2"><b>Jalan kaki</b></td></tr>
+    <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Jalan (arah mengikuti kamera)</td></tr>
+    <tr><td><kbd>Shift</kbd></td><td>Lari</td></tr><tr><td><kbd>Space</kbd></td><td>Lompat</td></tr>
+    <tr><td><kbd>F</kbd> / <kbd>E</kbd></td><td>Masuk mobil (dekati mobil dulu)</td></tr>
+    <tr><td><kbd>R</kbd></td><td>Kembali ke titik awal</td></tr>
+    <tr><td colspan="2"><b>Di mobil</b></td></tr>
+    <tr><td><kbd>W</kbd><kbd>↑</kbd></td><td>Maju</td></tr><tr><td><kbd>S</kbd><kbd>↓</kbd></td><td>Mundur</td></tr>
+    <tr><td><kbd>A</kbd><kbd>D</kbd></td><td>Belok</td></tr><tr><td><kbd>Shift</kbd></td><td>Boost</td></tr>
+    <tr><td><kbd>Space</kbd></td><td>Rem</td></tr><tr><td><kbd>F</kbd></td><td>Keluar mobil (mobil direm otomatis)</td></tr>
+    <tr><td><kbd>H</kbd></td><td>Klakson</td></tr><tr><td><kbd>R</kbd></td><td>Balikkan mobil / respawn</td></tr>
+    <tr><td colspan="2"><b>Umum</b></td></tr>
+    <tr><td><kbd>E</kbd></td><td>Interaksi (berlian putih)</td></tr>
+    <tr><td><kbd>T</kbd></td><td>Panel waktu &amp; pengaturan</td></tr><tr><td><kbd>[</kbd><kbd>]</kbd></td><td>Geser jam ±1</td></tr>
+    <tr><td><kbd>M</kbd></td><td>Suara on/off</td></tr>
+    <tr><td>Drag mouse / jari</td><td>Putar kamera</td></tr><tr><td>Scroll / cubit</td><td>Zoom kamera</td></tr>
+    <tr><td><kbd>Z</kbd><kbd>X</kbd></td><td>Putar kamera kiri/kanan</td></tr><tr><td><kbd>-</kbd><kbd>=</kbd></td><td>Zoom out/in</td></tr>
+    <tr><td><kbd>C</kbd> / klik ganda</td><td>Reset kamera</td></tr>
+  </table>
+</template>
+
+<div id="touch">
+  <div class="grp"><button data-k="left">◀</button><button data-k="right">▶</button></div>
+  <div class="grp"><button data-k="boost">⚡</button><button data-k="back">▼</button><button data-k="fwd">▲</button></div>
+  <div class="grp top"><button id="carBtn" title="Masuk / keluar mobil">🚙</button><button data-k="brake" title="Lompat / rem">⤒</button></div>
+</div>
+
+<script>
+  // ES modules + fetch() don't work from file:// — tell the user how to start it instead of a blank page.
+  if (location.protocol === 'file:') {
+    document.getElementById('loadText').innerHTML = '<span class="err">Game ini perlu dibuka lewat server lokal.<br>Klik dua kali <code>start.bat</code> di folder <code>tester</code>, lalu buka <code>http://localhost:8765</code>.</span>';
+    document.getElementById('bar').style.display = 'none';
+  }
+</script>
+</body>
+</html>

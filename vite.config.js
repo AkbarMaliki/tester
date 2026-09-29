@@ -6,7 +6,8 @@ export default defineConfig({
   preview: { port: 8765 },
   build: {
     target: 'es2022',      // modules use top-level await (shaders, palettes)
-    outDir: 'dist',
+    outDir: 'docs',        // committed; GitHub Pages serves main /docs (Pages can only serve / or /docs)
+    emptyOutDir: true,     // docs/ is build output only: never put hand-written files in it
     sourcemap: false,      // no source maps in the published build
     chunkSizeWarningLimit: 1500,
   },

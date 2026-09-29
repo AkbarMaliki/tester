@@ -6,7 +6,7 @@ Game web 3D bergaya [bruno-simon.com](https://bruno-simon.com): kamu mulai sebag
 
 Klik dua kali **`start.bat`**. Saat pertama kali dijalankan, dependency akan diinstall otomatis (butuh internet). Setelah itu server development Vite jalan dan browser terbuka di http://localhost:8765. Setiap kali file disimpan, halaman langsung ter-update. Butuh **Node.js 18+**.
 
-- `start.bat build`: membuat versi produksi di `dist/` (kode di-minify) lalu membuka preview-nya.
+- `start.bat build`: membuat versi produksi di `docs/` (kode di-minify) lalu membuka preview-nya.
 - Lewat terminal: `npm run dev`, `npm run build`, `npm run preview`, `npm run check`.
 
 Game ini **tidak bisa** dibuka dengan klik dua kali `index.html` (file://).
@@ -32,21 +32,22 @@ public/assets/data/*.json    data yang bisa diedit (palet warna, papan info)
 public/assets/shaders/*.glsl semua shader
 tools/check.cjs       cek import & aturan lapisan: npm run check
 vite.config.js        konfigurasi build (base relatif supaya jalan di GitHub Pages)
-.github/workflows/    deploy otomatis ke GitHub Pages
+docs/                 HASIL BUILD (otomatis, jangan diedit), disajikan GitHub Pages
+build.bat             build + commit + push ke GitHub
 CLAUDE.md             peta "mau ubah X → edit file Y" untuk AI
-docs/ARCHITECTURE.md  detail modul, urutan loop, daftar event, rencana genre lain
+ARCHITECTURE.md       detail modul, urutan loop, daftar event, rencana genre lain
 ```
 
 ## Deploy ke GitHub Pages
 
-1. Sekali saja: di GitHub buka **Settings → Pages → Build and deployment → Source**, lalu pilih **GitHub Actions** (bukan "Deploy from a branch").
+1. Sekali saja: di GitHub buka **Settings → Pages → Build and deployment**, lalu pilih Source **Deploy from a branch**, Branch **main**, folder **/docs**, dan klik **Save**.
 2. Klik dua kali **`build.bat`** (atau `build.bat pesan commit`). Script ini:
-   - cek kode dan build (kalau gagal, berhenti tanpa push)
-   - commit semua perubahan
+   - cek kode lalu build ke folder `docs/` (kalau gagal, berhenti tanpa push)
+   - commit semua perubahan (source + `docs/`)
    - push ke `main`
-3. GitHub Actions (`.github/workflows/deploy.yml`) lalu build ulang dan publish `dist/` ke `https://<username>.github.io/<nama-repo>/`. Progresnya bisa dilihat di tab **Actions**.
+3. GitHub Pages akan update dalam 1–2 menit di `https://<username>.github.io/<nama-repo>/`.
 
-Yang dipublish hanya hasil build (sudah di-minify, tanpa source map). Pages dari repo **private** butuh akun GitHub berbayar. Dengan akun gratis, pakai Netlify atau Cloudflare Pages (build command `npm run build`, folder output `dist`), atau jadikan repo publik. Kode yang jalan di browser selalu bisa dilihat orang, jadi **jangan pernah menaruh API key atau secret di `js/` atau `public/`**.
+Folder `docs/` adalah hasil build yang dibuat ulang setiap kali build, jadi jangan menaruh file lain di sana. Karena repo publik, source code-nya juga bisa dibaca orang. Kode yang jalan di browser selalu bisa dilihat, jadi **jangan pernah menaruh API key atau secret di `js/` atau `public/`**.
 
 **Menambah fitur** (misalnya memancing): salin `js/features/_template/` ke `js/features/fishing/`, lalu daftarkan di `js/features/index.js`. Langkah lengkapnya ada di `js/features/README.md`.
 

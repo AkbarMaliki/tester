@@ -1,5 +1,5 @@
 // Entry point: boots the world, then runs the frame loop. Keep this file thin: it only decides ORDER.
-// What happens inside each step lives in the module it calls (see docs/ARCHITECTURE.md > Frame loop).
+// What happens inside each step lives in the module it calls (see ARCHITECTURE.md > Frame loop).
 import * as THREE from 'three';
 import { $ } from './engine/util.js';
 import { scene, composer, world, U, dynamics, adaptResolution } from './engine/core.js';

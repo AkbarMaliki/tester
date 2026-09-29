@@ -9,7 +9,7 @@ index.html            markup only (HUD, panels, loader); Vite entry (loads js/ma
 vite.config.js        build config (relative base for GitHub Pages, es2022 for top-level await)
 package.json          three, cannon-es (pinned) + vite; scripts dev/build/preview/check
 css/style.css         all styles
-public/               copied as-is into dist/ (.nojekyll + assets/)
+public/               copied as-is into the build (.nojekyll + assets/)
 public/assets/
   data/*.json         tunable data (palettes, notice boards, future feature data)
   shaders/*.glsl      all GLSL, loaded by engine/shaders.js
@@ -24,8 +24,9 @@ js/
   ui/                 DOM HUD
   features/           self-contained gameplay features (README.md inside)
 tools/check.cjs       import/export + layer checker (npm run check; also runs before every build)
-.github/workflows/    deploy.yml: build + publish dist/ to GitHub Pages on push to main
-docs/                 this file
+docs/                 GENERATED build output (npm run build), committed and served by GitHub Pages
+build.bat / start.bat deploy (build + commit + push) / local dev server
+ARCHITECTURE.md       this file
 ```
 
 ## Modules and their public API

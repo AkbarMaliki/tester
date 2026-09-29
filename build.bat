@@ -1,5 +1,6 @@
 @echo off
-rem Build lalu push ke GitHub (branch main). GitHub Actions akan otomatis deploy ke GitHub Pages.
+rem Build ke folder docs/ lalu commit + push semuanya (source + docs/) ke GitHub branch main.
+rem GitHub Pages (Settings > Pages: Deploy from a branch, main, /docs) langsung menyajikan docs/.
 rem   build.bat                     -> tanya pesan commit (kosong = "update")
 rem   build.bat tambah fitur pancing -> pakai teks itu sebagai pesan commit
 setlocal
@@ -40,7 +41,7 @@ echo [3/3] Push ke GitHub...
 git push origin main || (echo Push GAGAL. Cek koneksi / login GitHub, lalu jalankan lagi. & pause & exit /b 1)
 
 echo.
-echo Selesai. Progres deploy: https://github.com/AkbarMaliki/tester/actions
+echo Selesai. GitHub Pages akan update dalam 1-2 menit: https://akbarmaliki.github.io/tester/
 pause
 exit /b 0
 

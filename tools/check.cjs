@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', 'js');
-// lower number = lower layer; see docs/ARCHITECTURE.md
+// lower number = lower layer; see ARCHITECTURE.md
 const LAYERS = { engine: 0, game: 0, systems: 1, world: 2, entities: 3, ui: 4, features: 5, 'main.js': 6 };
 
 const files = [];
