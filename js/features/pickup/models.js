@@ -3,7 +3,7 @@
 // high camera (the kid is ~1.5 m tall).
 // Built once per item type, baked to a single vertex-coloured mesh, then cloned for every copy in the world.
 import * as THREE from 'three';
-import { lam, mesh } from '../../engine/core.js';
+import { lam, mesh, DETAIL_LAYER } from '../../engine/core.js';
 import { bakeRig } from '../../engine/batch.js';
 
 const SCALE = 1.4;
@@ -60,7 +60,93 @@ const BUILD = {
     mesh(cyl(0.05, 0.05, 0.01, 6), md, g, 0.29, 0.05, -0.09, false).rotation.set(0, 0.3, Math.PI / 2);
     const lf = mesh(box(0.1, 0.015, 0.06), lam('#8fb84a'), g, -0.2, 0.09, 0.08, false); lf.rotation.y = 0.7;
   },
+  bottle(g) { bottle(g, true); },
+  bottleEmpty(g) { bottle(g, false); },
+  ginger(g) {   // knobbly root with a green shoot
+    const m = lam('#d9a55a');
+    for (const [x, z, r] of [[0, 0, 0.09], [0.12, 0.03, 0.07], [-0.11, -0.02, 0.075], [0.05, -0.1, 0.06], [-0.04, 0.1, 0.055]]) mesh(ico(r, 0), m, g, x, r * 0.8, z).scale.set(1.2, 0.8, 1);
+    mesh(ico(0.03, 0), lam('#f1d59a'), g, 0.02, 0.13, 0.02, false);
+    mesh(cyl(0.012, 0.015, 0.14, 4), lam('#6cc24e'), g, -0.1, 0.13, -0.02, false).rotation.z = 0.4;
+  },
+  antidote(g) {   // little green potion bottle with a cork and a white cross label
+    mesh(ico(0.12, 1), lam('#5fe08a'), g, 0, 0.12, 0).scale.set(1, 1, 1);
+    mesh(cyl(0.04, 0.05, 0.1, 7), lam('#9ff0bb'), g, 0, 0.25, 0);
+    mesh(cyl(0.045, 0.04, 0.06, 7), lam('#a8703e'), g, 0, 0.32, 0, false);
+    mesh(box(0.1, 0.03, 0.02), lam('#ffffff'), g, 0, 0.13, 0.115, false);
+    mesh(box(0.03, 0.1, 0.02), lam('#ffffff'), g, 0, 0.13, 0.115, false);
+  },
+  bandage(g) {   // roll lying down + loose end, red cross stripe
+    const roll = new THREE.Group(); roll.rotation.z = Math.PI / 2; roll.position.y = 0.11; g.add(roll);
+    mesh(cyl(0.11, 0.11, 0.18, 10), lam('#f4f0e8'), roll);
+    mesh(cyl(0.045, 0.045, 0.19, 8), lam('#d8cfc0'), roll, 0, 0, 0, false);
+    mesh(box(0.18, 0.01, 0.2), lam('#f4f0e8'), g, 0, 0.005, 0.18, false);
+    mesh(box(0.1, 0.012, 0.03), lam('#e8324f'), g, 0, 0.012, 0.2, false);
+    mesh(box(0.03, 0.012, 0.1), lam('#e8324f'), g, 0, 0.012, 0.2, false);
+  },
+  bread(g) {   // loaf with a golden crust and score marks
+    mesh(box(0.36, 0.12, 0.2), lam('#e0a95c'), g, 0, 0.06, 0);
+    mesh(ico(0.14, 1), lam('#c47e38'), g, 0, 0.12, 0).scale.set(1.3, 0.55, 0.75);
+    for (const x of [-0.09, 0, 0.09]) { const s = mesh(box(0.02, 0.012, 0.14), lam('#f1d59a'), g, x, 0.19, 0, false); s.rotation.y = 0.5; }
+  },
+  soup(g) {   // red bowl of soup with mushroom bits and a spoon
+    mesh(cyl(0.18, 0.1, 0.13, 10), lam('#d0342c'), g, 0, 0.065, 0);
+    mesh(cyl(0.16, 0.16, 0.02, 10), lam('#e8b04a'), g, 0, 0.12, 0, false);
+    for (const [x, z] of [[0.06, 0.04], [-0.07, 0.02], [0, -0.08]]) mesh(ico(0.035, 0), lam('#f4ead0'), g, x, 0.135, z, false);
+    mesh(ico(0.03, 0), lam('#d9344a'), g, -0.02, 0.14, 0.08, false);
+    const sp = mesh(box(0.03, 0.02, 0.26), lam('#c9c9d9'), g, 0.1, 0.17, -0.02, false); sp.rotation.set(0.5, 0.4, 0);
+  },
+  coffee(g) {   // cup on a saucer
+    mesh(cyl(0.16, 0.16, 0.025, 12), lam('#f2eeff'), g, 0, 0.012, 0);
+    mesh(cyl(0.1, 0.08, 0.16, 10), lam('#ffffff'), g, 0, 0.1, 0);
+    mesh(cyl(0.088, 0.088, 0.01, 10), lam('#4a2a18'), g, 0, 0.176, 0, false);
+    mesh(new THREE.TorusGeometry(0.045, 0.015, 5, 8), lam('#ffffff'), g, 0.11, 0.1, 0, false);
+  },
+  energyDrink(g) {   // can with a lightning stripe
+    mesh(cyl(0.075, 0.075, 0.26, 10), lam('#2f8cff'), g, 0, 0.13, 0);
+    mesh(cyl(0.065, 0.075, 0.03, 10), lam('#c9c9d9'), g, 0, 0.275, 0, false);
+    const b = mesh(box(0.05, 0.14, 0.02), lam('#ffe03a'), g, 0, 0.14, 0.072, false); b.rotation.z = 0.5;
+  },
+  tea(g) {   // glass mug of amber tea with a steam curl
+    mesh(cyl(0.09, 0.08, 0.18, 10), lam('#e8f4ff'), g, 0, 0.09, 0);
+    mesh(cyl(0.082, 0.082, 0.01, 10), lam('#c9772a'), g, 0, 0.17, 0, false);
+    mesh(new THREE.TorusGeometry(0.045, 0.014, 5, 8), lam('#e8f4ff'), g, 0.1, 0.1, 0, false);
+    for (const [y, x] of [[0.24, 0.02], [0.3, -0.02]]) mesh(ico(0.025, 0), lam('#ffffff'), g, x, y, 0, false).scale.y = 1.4;
+  },
+  cocoa(g) {   // red mug of cocoa with marshmallows
+    mesh(cyl(0.1, 0.09, 0.17, 10), lam('#d0342c'), g, 0, 0.085, 0);
+    mesh(cyl(0.09, 0.09, 0.01, 10), lam('#5a2e1a'), g, 0, 0.165, 0, false);
+    for (const [x, z] of [[0.03, 0.02], [-0.03, -0.01], [0.0, -0.04]]) mesh(box(0.035, 0.03, 0.035), lam('#fff4f8'), g, x, 0.18, z, false);
+    mesh(new THREE.TorusGeometry(0.05, 0.016, 5, 8), lam('#d0342c'), g, 0.11, 0.09, 0, false);
+  },
+  icedTea(g) {   // tall glass, ice cubes, straw
+    mesh(cyl(0.075, 0.06, 0.28, 10), lam('#e0a050'), g, 0, 0.14, 0);
+    for (const [x, z, y] of [[0.02, 0.02, 0.26], [-0.025, -0.01, 0.27]]) mesh(box(0.04, 0.04, 0.04), lam('#eaf8ff'), g, x, y, z, false);
+    const st = mesh(cyl(0.01, 0.01, 0.2, 5), lam('#e8324f'), g, 0.03, 0.33, 0.01, false); st.rotation.z = -0.3;
+  },
+  umbrella(g) {   // open red-and-white umbrella (base at the handle, so it sits over the head when carried)
+    mesh(cyl(0.012, 0.012, 0.5, 5), lam('#5d3b6e'), g, 0, 0.25, 0);
+    const hook = mesh(new THREE.TorusGeometry(0.035, 0.012, 4, 8, Math.PI), lam('#5d3b6e'), g, 0.035, 0.0, 0, false); hook.rotation.z = Math.PI;
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2;
+      const panel = mesh(new THREE.ConeGeometry(0.42, 0.2, 3, 1, true, a, Math.PI / 4), lam(i % 2 ? '#ffffff' : '#e8324f', { side: THREE.DoubleSide }), g, 0, 0.58, 0);
+      panel.castShadow = true;
+    }
+    mesh(ico(0.02, 0), lam('#ffd98a'), g, 0, 0.69, 0, false);
+  },
+  sachet(g) {   // flat orange packet with a white label
+    mesh(box(0.22, 0.03, 0.28), lam('#ff9a3a'), g, 0, 0.015, 0);
+    mesh(box(0.14, 0.01, 0.12), lam('#ffffff'), g, 0, 0.034, 0.02, false);
+    mesh(box(0.22, 0.02, 0.03), lam('#e0772a'), g, 0, 0.02, -0.14, false);
+  },
 };
+// drinking bottle, lying on its side so it reads from above; `full` = blue water inside, else a pale empty one
+function bottle(g, full) {
+  const b = new THREE.Group(); b.rotation.z = Math.PI / 2; b.position.y = 0.09; g.add(b);
+  mesh(cyl(0.085, 0.085, 0.3, 9), lam(full ? '#5fb8f0' : '#cfe3ee'), b, 0, 0, 0);
+  mesh(cyl(0.088, 0.088, 0.1, 9), lam(full ? '#ffffff' : '#e9eef2'), b, 0, 0.02, 0, false);     // label
+  mesh(cyl(0.05, 0.085, 0.07, 9), lam(full ? '#8fd0f7' : '#dcebf2'), b, 0, 0.185, 0);           // shoulder
+  mesh(cyl(0.045, 0.045, 0.06, 8), lam(full ? '#2f6fd6' : '#8a96a8'), b, 0, 0.25, 0);           // cap
+}
 
 // returns a single-mesh Group; unknown model names fall back to a grey box so a data typo is visible, not fatal
 export function buildModel(name) {
@@ -68,5 +154,6 @@ export function buildModel(name) {
   (BUILD[name] || ((o) => mesh(box(0.25, 0.25, 0.25), lam('#888'), o, 0, 0.125, 0)))(inner);
   if (!BUILD[name]) console.warn(`pickup: unknown item model '${name}'`);
   bakeRig(g, [g]);
+  g.traverse(o => o.layers.set(DETAIL_LAYER));   // too small for the map view: skipped there (clones keep it)
   return g;
 }

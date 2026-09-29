@@ -1,0 +1,49 @@
+{
+  "_help": "Calendar (systems/calendar.js) + season look (world/seasons.js). A year = the seasons in order, each daysPerSeason long; day 0 of a new game = the first day of the first season. look colours are what the world looks like at noon; each is scaled by how bright the time-of-day palette makes that colour relative to the FIRST season's look (keep the first season equal to the 'day' palette in palettes.json), so nights stay dark and sunsets warm. grassH = grass height, leafScale = size of tree leaves (thin crowns in winter), leafMix / leafMixColor = how much every leaf is recoloured towards that colour, groundLeaves = colour of the fallen leaves (null = hidden). particles = ambient particles of the season (petal | leaf | none). footprints = how dark the kid's footprints are (0 = none), printLife = seconds before one fades. env = flags for systems/stats.js conditions (survival.json: conditions[].env), envNight / envNoon only at night (20-6) / at noon (11-15.5). weather = chance of each weather per day (weathers below).",
+  "daysPerSeason": 28,
+  "weekdays": ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+  "seasons": [
+    { "id": "semi", "name": "Musim Semi", "short": "Semi", "icon": "🌸", "color": "#ff9ac8",
+      "desc": "Bunga bermekaran dan kelopak sakura beterbangan. Udara segar membuat stamina lebih cepat pulih. Sering gerimis.",
+      "look": { "grassA": "#6b8c33", "grassB": "#c9d86a", "leaf": "#ffffff", "ground": "#f0cfae", "paved": "#f5dcc3", "grassH": 1, "leafScale": 1, "leafMix": 0, "leafMixColor": "#ffffff", "groundLeaves": "#f2a0c4" },
+      "particles": { "kind": "petal", "count": 140, "color": "#ffc6de", "size": 0.3, "fall": 0.55, "sway": 1.3 },
+      "footprints": 0.28, "printLife": 10, "env": ["semi"],
+      "weather": { "cerah": 0.55, "berawan": 0.2, "hujan": 0.25 } },
+    { "id": "panas", "name": "Musim Panas", "short": "Panas", "icon": "☀", "color": "#ffc23a",
+      "desc": "Rumput paling hijau dan matahari terik. Siang hari (11:00-15:30) di luar bikin Kepanasan: cepat haus. Kadang hujan badai.",
+      "look": { "grassA": "#4f8f2a", "grassB": "#b8e05a", "leaf": "#ffffff", "ground": "#f2d3a8", "paved": "#f7e0c4", "grassH": 1.12, "leafScale": 1.05, "leafMix": 0.35, "leafMixColor": "#5fb84a", "groundLeaves": null },
+      "particles": { "kind": "none" },
+      "footprints": 0.18, "printLife": 8, "env": ["panas"], "envNoon": ["terik"],
+      "weather": { "cerah": 0.65, "berawan": 0.15, "hujan": 0.2 } },
+    { "id": "gugur", "name": "Musim Gugur", "short": "Gugur", "icon": "🍂", "color": "#ff8a38",
+      "desc": "Daun menguning dan berguguran, rumput mulai kecokelatan. Udara sejuk: tidak mudah haus. Hujan cukup sering.",
+      "look": { "grassA": "#8a6a2a", "grassB": "#e0a94a", "leaf": "#ffffff", "ground": "#ecc79e", "paved": "#f2d6bb", "grassH": 0.85, "leafScale": 0.95, "leafMix": 0.6, "leafMixColor": "#f07a24", "groundLeaves": "#d9662a" },
+      "particles": { "kind": "leaf", "count": 190, "color": "#ff9a3a", "size": 0.34, "fall": 0.85, "sway": 1.7 },
+      "footprints": 0.3, "printLife": 12, "env": ["gugur"],
+      "weather": { "cerah": 0.45, "berawan": 0.25, "hujan": 0.3 } },
+    { "id": "dingin", "name": "Musim Dingin", "short": "Dingin", "icon": "❄", "color": "#9fd4ff",
+      "desc": "Salju menutupi tanah, pohon meranggas. Di luar kamu Kedinginan (stamina cepat habis, cepat lapar), malam hari Membeku (darah turun). Tangkal dengan teh/cokelat hangat atau sup.",
+      "look": { "grassA": "#b8c4dc", "grassB": "#ffffff", "leaf": "#ffffff", "ground": "#f2f5ff", "paved": "#e6eaf6", "grassH": 0.4, "leafScale": 0.55, "leafMix": 0.75, "leafMixColor": "#eef3ff", "groundLeaves": null },
+      "particles": { "kind": "none" },
+      "footprints": 0.9, "printLife": 30, "env": ["dingin"], "envNight": ["malam_dingin"],
+      "weather": { "cerah": 0.4, "berawan": 0.2, "salju": 0.4 } }
+  ],
+  "_weathers": "dim = how much darker the sky/sun get (1 = normal). fx = weather particles (rain | snow | none), amount 0..1. env = extra stats.js flags while it lasts. prints = footprint darkness multiplier (mud / fresh snow).",
+  "weathers": {
+    "cerah":   { "name": "Cerah", "icon": "☀", "dim": 1, "fx": "none", "amount": 0 },
+    "berawan": { "name": "Berawan", "icon": "☁", "dim": 0.82, "fx": "none", "amount": 0 },
+    "hujan":   { "name": "Hujan", "icon": "🌧", "dim": 0.5, "fx": "rain", "amount": 1, "env": ["hujan"], "prints": 1.5 },
+    "salju":   { "name": "Hujan salju", "icon": "🌨", "dim": 0.78, "fx": "snow", "amount": 1, "env": ["salju"], "prints": 1.2 }
+  },
+  "events": [
+    { "season": "semi", "day": 1, "icon": "🌱", "name": "Awal musim semi" },
+    { "season": "semi", "day": 23, "icon": "💐", "name": "Festival Bunga" },
+    { "season": "panas", "day": 1, "icon": "🏖", "name": "Awal musim panas" },
+    { "season": "panas", "day": 24, "icon": "🎆", "name": "Festival Kembang Api" },
+    { "season": "gugur", "day": 1, "icon": "🍁", "name": "Awal musim gugur" },
+    { "season": "gugur", "day": 12, "icon": "🌾", "name": "Festival Panen" },
+    { "season": "dingin", "day": 1, "icon": "⛄", "name": "Awal musim dingin" },
+    { "season": "dingin", "day": 24, "icon": "✨", "name": "Malam Berbintang" },
+    { "season": "dingin", "day": 28, "icon": "🎉", "name": "Malam Tahun Baru" }
+  ]
+}

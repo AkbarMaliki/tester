@@ -4,8 +4,10 @@ import { W, HALF } from '../game/config.js';
 import { clamp, lerp, smooth, vnoise, fbm, sdSeg, sdBox } from '../engine/util.js';
 
 export const LAKES = [{ x: -40, z: -20, r: 14 }, { x: 18, z: 47, r: 12 }, { x: 51, z: -35, r: 9 }, { x: -61, z: 12, r: 6 }];
-export const PLAZAS = [[0, 0, 12.5], [40, 4, 9], [-26, 28, 11], [46, -23, 5], [-50, 16, 5]];
-export const ROADS = [[0, 0, 36, 4], [0, 0, -24, 26], [0, 0, 0, -48], [0, 0, 8, 31], [36, 4, 46, -22], [-24, 26, -50, 16]];
+// Balai Warga: the village rest area (drinking fountain, public toilet, gazebo with a bed; built by features/survival)
+export const BALAI = { x: 24, z: -25, r: 9.5 };
+export const PLAZAS = [[0, 0, 12.5], [40, 4, 9], [-26, 28, 11], [46, -23, 5], [-50, 16, 5], [BALAI.x, BALAI.z, BALAI.r]];
+export const ROADS = [[0, 0, 36, 4], [0, 0, -24, 26], [0, 0, 0, -48], [0, 0, 8, 31], [36, 4, 46, -22], [-24, 26, -50, 16], [0, -25, BALAI.x, BALAI.z]];
 export const LOT = { x: 0, z: -55, hx: 26, hz: 7 };
 export const keepOut = [];   // {x,z,r} areas without grass/trees (filled by props before baking)
 

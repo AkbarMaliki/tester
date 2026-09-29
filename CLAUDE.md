@@ -15,15 +15,23 @@ Browser 3D game: three.js 0.169 + cannon-es 0.20 (npm, pinned), plain ES modules
 | add a gameplay feature (fishing, farming, shop, quest, minigame…) | new folder `js/features/<name>/` + one line in `js/features/index.js` (checklist: `js/features/README.md`) |
 | change how the kid **looks** (clothes, hair, face, colours) | `js/entities/player/model.js` |
 | change how the kid **moves/animates**, enters the car | `js/entities/player/controller.js` |
+| facial expressions (sick, hungry, sleepy…) · character preview in the bag/profile panels | `js/entities/player/face.js` (+ face parts in `model.js`) · `js/ui/preview.js` |
 | car handling, model, lights, exhaust | `js/entities/car/car.js` |
 | move/add park furniture, change build order / loading texts | `js/world/layout.js` (placement) + `js/world/props.js` (prop builders) |
 | lakes, roads, plazas, where grass may grow | `js/world/worldmap.js` |
 | ground / water mesh | `js/world/terrain.js` (+ `public/assets/shaders/ground|water.*.glsl`) |
 | grass, trees, rocks, leaves | `js/world/vegetation.js` (+ `public/assets/shaders/grass|leaves.*.glsl`) |
 | day/night colours | `public/assets/data/palettes.json` (data), `js/systems/daynight.js` (clock), `js/world/sky.js` (applies it) |
+| seasons, calendar, festivals, weather (rain/snow), how each season looks | `public/assets/data/calendar.json` (data) · `js/systems/calendar.js` (dates) · `js/world/seasons.js` (look, particles, env flags) · `js/ui/calendar.js` (panel K + date top-left) |
+| footprints | `js/world/footprints.js` (darkness/lifetime per season in calendar.json) |
+| map view (M), map icons · hide something on the map | `js/ui/map.js` · `addMapMarker()` from `js/systems/mapmarkers.js` · `obj.layers.set(DETAIL_LAYER)` (engine/core.js) |
 | notice board texts / positions | `public/assets/data/zones.json` |
 | pickable items (list, model, where they spawn), holding over the head | `public/assets/data/items.json` + `js/features/pickup/` (models in `models.js`) |
 | bag / inventory data (slots, stacks, add/remove items) · bag panel & button | `js/systems/inventory.js` · `js/ui/inventory.js` |
+| survival: hunger/thirst/energy/bladder, health & stamina, buffs/debuffs, character profile (design: `SURVIVAL.md`) | numbers: `public/assets/data/survival.json` · rules: `js/systems/stats.js` · HUD + profile panel (P): `js/ui/survival.js` |
+| what food does (eat/drink values, poison chance) | `public/assets/data/items.json` → `"use"` |
+| Balai Warga (fountain, toilet, gazebo bed), eating, sleeping, fainting | `js/features/survival/` (models in `models.js`) |
+| debug chest (all items + test buttons) · switch debug tools off | `js/features/debug/` · `DEBUG` in `js/game/config.js` |
 | save / load, slots, autosave, Firebase cloud · main menu & pause menu | `js/systems/save.js` (+ `js/engine/firebase.js`, config in `.env.local`) · `js/ui/menu.js` |
 | "press E here" spots | `js/systems/interaction.js` → `addZone()` |
 | keys / controls | `js/systems/input.js` (`keys`, `onKey()`), DOM listeners + HUD in `js/ui/ui.js`, markup in `index.html`, style in `css/style.css` |

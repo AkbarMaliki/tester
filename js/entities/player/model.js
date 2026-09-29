@@ -160,13 +160,46 @@ J.LA = arm(1); J.RA = arm(-1);
     deco(box(0.026, 0.026, 0.01), M.white, J.eyes, x + 0.014, 0.022, 0.007);
     deco(box(0.012, 0.012, 0.01), M.white, J.eyes, x - 0.018, -0.03, 0.007);
     const lash = deco(box(0.092, 0.018, 0.014), M.eye, J.eyes, x + s * 0.004, 0.052, 0.002); lash.rotation.z = s * 0.15;
-    const brow = deco(box(0.07, 0.014, 0.01), M.hair, h, x, 0.285, 0.19); brow.rotation.z = -s * 0.12;
     const bl = deco(new THREE.CircleGeometry(0.032, 10), M.blush, h, s * 0.135, 0.12, 0.188); bl.scale.y = 0.55;
   }
   J.mouth = new THREE.Group(); J.mouth.position.set(0, 0.095, 0.19); h.add(J.mouth);
   deco(new THREE.CircleGeometry(0.045, 12, Math.PI, Math.PI), M.mouth, J.mouth, 0, 0, 0.002).scale.x = 1.2;
   deco(new THREE.CircleGeometry(0.026, 10, Math.PI, Math.PI), M.tongue, J.mouth, 0, -0.02, 0.004);
   deco(box(0.08, 0.012, 0.004), M.white, J.mouth, 0, -0.005, 0.004);
+
+  // ---- expression parts (entities/player/face.js drives them): each is its own joint so it can move / hide
+  const part = (name, x, y, z, parent = h) => { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); J[name] = g; return g; };
+  for (const [k, s] of [['browL', 1], ['browR', -1]]) {   // brows: rotation.z tilts them (worried / angry)
+    deco(box(0.07, 0.014, 0.01), M.hair, part(k, s * 0.085, 0.285, 0.19), 0, 0, 0);
+  }
+  for (const [k, s] of [['lidL', 1], ['lidR', -1]]) {     // eyelids: anchored at the top, scale.y 0 = open .. 1 = shut
+    deco(box(0.092, 0.11, 0.01), M.skin, part(k, s * 0.085, 0.245, 0.201), 0, -0.055, 0);
+  }
+  { const g = part('mouthO', 0, 0.09, 0.19);             // small round "o" (hungry, yawning, panting)
+    deco(new THREE.CircleGeometry(0.03, 12), M.mouth, g, 0, 0, 0.003).scale.y = 1.25;
+    deco(new THREE.CircleGeometry(0.016, 8), M.tongue, g, 0, -0.014, 0.005); }
+  { const g = part('mouthFrown', 0, 0.08, 0.19);         // upside-down smile (hurt, thirsty)
+    deco(new THREE.CircleGeometry(0.036, 12, 0, Math.PI), M.mouth, g, 0, 0, 0.003).scale.set(1.1, 0.55, 1); }
+  { const g = part('mouthWavy', 0, 0.09, 0.19);          // wobbly line (sick, holding it in)
+    for (let i = -2; i <= 2; i++) { const b = deco(box(0.026, 0.011, 0.006), M.mouth, g, i * 0.021, 0, 0.003); b.rotation.z = i % 2 ? 0.55 : -0.55; } }
+  { const g = part('tongue', 0, 0.075, 0.195);           // tongue hanging out (thirsty)
+    deco(box(0.04, 0.05, 0.012), M.tongue, g, 0, -0.022, 0); deco(box(0.004, 0.035, 0.013), M.mouth, g, 0, -0.022, 0.001); }
+  { const g = part('fxSick', 0, 0, 0);                   // green gloom lines under the eyes + green cheeks
+    const green = lam('#7cc46a'), greenD = lam('#4f9a54');
+    for (const s of [1, -1]) {
+      for (let i = -1; i <= 1; i++) deco(box(0.009, 0.034 - Math.abs(i) * 0.008, 0.006), greenD, g, s * 0.085 + i * 0.022, 0.12, 0.198);
+      deco(new THREE.CircleGeometry(0.036, 10), green, g, s * 0.145, 0.105, 0.191).scale.y = 0.6;
+    } }
+  { const g = part('fxSweat', 0.165, 0.25, 0.205);       // sweat drop at the corner of the forehead
+    deco(new THREE.SphereGeometry(0.028, 8, 6), lam('#8fd8ff'), g, 0, 0, 0).scale.set(0.8, 1.2, 0.6);
+    deco(new THREE.ConeGeometry(0.02, 0.04, 6), lam('#8fd8ff'), g, 0, 0.038, 0); }
+  { const g = part('fxDrool', -0.045, 0.07, 0.195);      // drool at the mouth corner (hungry)
+    deco(new THREE.SphereGeometry(0.014, 6, 4), lam('#bfe8ff'), g, 0, -0.012, 0).scale.y = 1.6; }
+  { const g = part('fxCold', 0, 0, 0);                   // blue cheeks + runny nose (freezing)
+    for (const s of [1, -1]) deco(new THREE.CircleGeometry(0.038, 10), lam('#8fb8ff'), g, s * 0.14, 0.11, 0.191).scale.y = 0.6;
+    deco(new THREE.SphereGeometry(0.012, 6, 4), lam('#d8f0ff'), g, 0.012, 0.125, 0.202).scale.y = 1.8; }
+  { const g = part('fxBags', 0, 0.13, 0.198);            // dark rings under the eyes (sleepy)
+    for (const s of [1, -1]) deco(box(0.06, 0.012, 0.006), lam('#b07f8f'), g, s * 0.085, 0, 0); }
   // hair
   // dome rather than a box: a box's top corners poked out from under the cap as two bumps at the back
   const top = mesh(new THREE.SphereGeometry(0.25, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), M.hair, h, 0, 0.3, -0.005); top.scale.set(0.95, 0.75, 0.9);
@@ -200,4 +233,22 @@ J.LA = arm(1); J.RA = arm(-1);
 }
 
 // ~130 primitives -> one vertex-coloured mesh per joint (~17 draw calls instead of ~200 with shadows)
-bakeRig(avatar, [J.hips, J.spine, J.head, J.eyes, J.mouth, J.bucket, J.basket, J.L.hip, J.L.knee, J.L.foot, J.R.hip, J.R.knee, J.R.foot, J.LA.sh, J.LA.el, J.RA.sh, J.RA.el]);
+export const FACE_PARTS = ['browL', 'browR', 'lidL', 'lidR', 'mouthO', 'mouthFrown', 'mouthWavy', 'tongue', 'fxSick', 'fxSweat', 'fxDrool', 'fxBags', 'fxCold'];
+// joints get names so a clone of the avatar (ui/preview.js) can find its own copies: rigOf(root)
+const JOINT_NAMES = { hips: J.hips, spine: J.spine, head: J.head, eyes: J.eyes, mouth: J.mouth, bucket: J.bucket, basket: J.basket,
+  lHip: J.L.hip, lKnee: J.L.knee, lFoot: J.L.foot, rHip: J.R.hip, rKnee: J.R.knee, rFoot: J.R.foot, lSh: J.LA.sh, lEl: J.LA.el, rSh: J.RA.sh, rEl: J.RA.el,
+  squash, ...Object.fromEntries(FACE_PARTS.map(k => [k, J[k]])) };
+for (const [k, o] of Object.entries(JOINT_NAMES)) o.name = 'j:' + k;
+export function rigOf(root) {
+  const g = (k) => root.getObjectByName('j:' + k);
+  const R = { squash: g('squash'), hips: g('hips'), spine: g('spine'), head: g('head'), eyes: g('eyes'), mouth: g('mouth'), bucket: g('bucket'), basket: g('basket'),
+    L: { hip: g('lHip'), knee: g('lKnee'), foot: g('lFoot') }, R: { hip: g('rHip'), knee: g('rKnee'), foot: g('rFoot') },
+    LA: { sh: g('lSh'), el: g('lEl') }, RA: { sh: g('rSh'), el: g('rEl') } };
+  for (const k of FACE_PARTS) R[k] = g(k);
+  return R;
+}
+
+bakeRig(avatar, [...FACE_PARTS.map(k => J[k]), J.hips, J.spine, J.head, J.eyes, J.mouth, J.bucket, J.basket, J.L.hip, J.L.knee, J.L.foot, J.R.hip, J.R.knee, J.R.foot, J.LA.sh, J.LA.el, J.RA.sh, J.RA.el]);
+// resting face: lids open, only the smile showing (face.js takes over every frame)
+for (const k of FACE_PARTS) J[k].visible = k.startsWith('brow');
+J.lidL.scale.y = J.lidR.scale.y = 0.001;

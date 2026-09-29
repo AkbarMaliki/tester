@@ -8,22 +8,35 @@ import { player, toggleCar, respawnPlayer } from '../entities/player/controller.
 import { sfx } from '../engine/audio.js';
 import { keys, KEYMAP, clearKeys, dispatchKey } from '../systems/input.js';
 import { on } from '../engine/events.js';
+import { CAL, today, forceWeather } from '../systems/calendar.js';
 
 export const ui = { started: false, activeZone: null };
 // any panel that pauses gameplay input (the info modal, the inventory from ui/inventory.js)
-export const modalOpen = () => ['modal', 'inventory', 'pause'].some(id => $(id).classList.contains('show'));
+export const modalOpen = () => ['modal', 'inventory', 'pause', 'profile', 'fade', 'mapView'].some(id => $(id).classList.contains('show'));
 export const windEnabled = () => $('optWind').checked;
 
 // ---------------------------------------------------------------- modal + zones
-export function openModal(html) { $('modalBody').innerHTML = html; $('modal').classList.add('show'); clearKeys(); }
-function closeModal() { $('modal').classList.remove('show'); }
+// onClick (optional) receives clicks inside the panel, e.g. for buttons in `html`
+export function openModal(html, onClick = null) { $('modalBody').innerHTML = html; $('modalBody').onclick = onClick; $('modal').classList.add('show'); clearKeys(); }
+export function closeModal() { $('modal').classList.remove('show'); }
+
+// black screen for time skips (sleeping, the toilet, fainting): fades out, runs `mid` while it's dark, fades back in.
+// Gameplay input is paused meanwhile (modalOpen). Resolves when the screen is visible again.
+export function fadeThrough(text, mid, hold = 900) {
+  if ($('fade').classList.contains('show')) return Promise.resolve();
+  $('fadeText').innerHTML = text || ''; $('fade').classList.add('show'); clearKeys();
+  return new Promise((done) => setTimeout(() => {
+    if (mid) mid();
+    setTimeout(() => { $('fade').classList.remove('show'); setTimeout(done, 500); }, hold);
+  }, 550));
+}
 function openZone(z) { if (z.action) { z.action(); if (!z.quiet) sfx.pop(); } if (z.content) openModal(z.content); }
 // R / respawn button: flips or resets the car while driving, puts the kid back at the start on foot
 function doRespawn() { if (player.mode === 'car') { if (isUpsideDown()) unflip(); else respawn(); } else respawnPlayer(); }
 
 // hint line under the screen, swapped between on-foot and driving controls
 const HINTS = {
-  foot: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera',
+  foot: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>P</kbd> profil · <kbd>K</kbd> kalender · <kbd>M</kbd> peta · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera',
   car: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = setir · <kbd>Shift</kbd> boost · <kbd>Space</kbd> rem · <kbd>H</kbd> klakson · <kbd>F</kbd> keluar mobil · <kbd>R</kbd> reset',
 };
 let hintTimer = 0;
@@ -39,7 +52,13 @@ export function setPrompt(zone) {
 }
 
 // ---------------------------------------------------------------- keyboard / touch
+// A clicked HUD button keeps keyboard focus, and the browser then "clicks" it again on Enter/Space, so interacting
+// (E/Enter) or jumping would also fire the last button pressed (reset camera, respawn…). Buttons drop focus after a
+// click, and while playing, gameplay keys never reach a focused button.
+document.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) b.blur(); });
+const GAME_KEYS = new Set(['KeyE', 'Enter', 'NumpadEnter', 'Space', ...Object.keys(KEYMAP)]);
 addEventListener('keydown', (e) => {
+  if (ui.started && !modalOpen() && GAME_KEYS.has(e.code) && document.activeElement?.tagName === 'BUTTON') { e.preventDefault(); document.activeElement.blur(); }
   if ((e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') && e.code !== 'Escape') return;
   if (KEYMAP[e.code]) { keys[KEYMAP[e.code]] = 1; e.preventDefault(); }
   if (e.repeat) return;
@@ -50,7 +69,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') doRespawn();
   if (e.code === 'KeyH' && player.mode === 'car') sfx.horn();
   if (e.code === 'KeyF') toggleCar();
-  if (e.code === 'KeyM') toggleMute();
+  if (e.code === 'KeyN') toggleMute();
   if (e.code === 'KeyE' || e.code === 'Enter') { if (ui.activeZone) openZone(ui.activeZone); else if (player.mode === 'car') toggleCar(); }
   dispatchKey(e.code);   // bindings registered by features via systems/input.js onKey()
 });
@@ -93,12 +112,19 @@ $('realTime').onchange = (e) => { time.real = e.target.checked; $('speedSel').di
 $('hourSlider').oninput = (e) => setManualHour(parseFloat(e.target.value));
 $('speedSel').onchange = (e) => { time.speed = parseFloat(e.target.value); };
 $('speedSel').disabled = true;
-// a loaded save / new game changed the clock: mirror it in the panel
-on('save:applied', () => {
+// a loaded save / new game / sleeping changed the clock: mirror it in the panel
+const mirrorClock = () => {
   $('realTime').checked = time.real; $('speedSel').disabled = time.real;
   if ([...$('speedSel').options].some(o => +o.value === time.speed)) $('speedSel').value = String(time.speed);
-});
-document.querySelectorAll('#settings .presets button').forEach(b => { b.onclick = () => setManualHour(parseFloat(b.dataset.h)); });
+};
+on('save:applied', mirrorClock);
+on('time:skipped', mirrorClock);
+document.querySelectorAll('#settings .presets button[data-h]').forEach(b => { b.onclick = () => setManualHour(parseFloat(b.dataset.h)); });
+// weather for today (systems/calendar.js forceWeather): one button per weather + back to the forecast
+$('weatherBtns').innerHTML = Object.entries(CAL.weathers).map(([k, w]) => `<button data-w="${k}">${w.icon} ${w.name}</button>`).join('') + '<button data-w="">🔄 Otomatis</button>';
+const markWeather = () => { const id = today().weather.id; for (const b of $('weatherBtns').children) b.classList.toggle('on', b.dataset.w === id); };
+$('weatherBtns').onclick = (e) => { const b = e.target.closest('button[data-w]'); if (b) { forceWeather(b.dataset.w || null); markWeather(); } };
+on('calendar:day', markWeather);
 
 export function setQuality(q, remember = true) {
   applyQuality(q);
@@ -137,6 +163,7 @@ export function updateClockUI(h) {
   const txt = fmt(h);
   if (txt !== lastClockText) {
     lastClockText = txt; $('clockTime').textContent = txt; $('clockLabel').textContent = dayLabel(h);
+    markWeather();
     $('hourVal').textContent = txt; $('realNow').textContent = fmt(nowHour());
     if (document.activeElement !== $('hourSlider')) $('hourSlider').value = h;
   }

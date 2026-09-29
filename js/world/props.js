@@ -9,6 +9,7 @@ import { rand, canvasTex } from '../engine/util.js';
 import { scene, lam, glowMat, mesh, group, addStatic, addDynamic } from '../engine/core.js';
 import { LAKES, LOT, landDist, keepOut } from './worldmap.js';
 import { addZone } from '../systems/interaction.js';
+import { addMapMarker } from '../systems/mapmarkers.js';
 import { emit } from '../engine/events.js';
 
 export const lampPositions = [];   // fed to the ground shader for warm light pools
@@ -68,7 +69,7 @@ export function barrel(x, z, hex) {
 
 // notice board with a red roof + white diamond interaction point.
 // `action` (from public/assets/data/zones.json) is an event name emitted on E, e.g. 'bowling:reset'
-export function board({ x, z, rot, title, html, label, action }) {
+export function board({ x, z, rot, title, html, label, action, map = true }) {   // map: false = no map-view marker
   const g = group(x, 0, z, rot);
   const woodB = lam('#7a4f8a'), roofM = lam('#c9304c'), roofD = lam('#8e1f38');
   for (const s of [-2, 2]) mesh(new THREE.BoxGeometry(0.28, 3.4, 0.28), woodB, g, s, 1.7, 0);
@@ -99,6 +100,7 @@ export function board({ x, z, rot, title, html, label, action }) {
   ring.position.set(front.x, 0.04, front.z); scene.add(ring);
   addZone({ pos: front, label: label || title, content: html || null, action: action ? () => emit(action) || console.warn(`board '${title}': no listener for event '${action}'`) : null, dia, ring });
   keepOut.push({ x, z, r: 3.5 }, { x: front.x, z: front.z, r: 2.5 });
+  if (map) addMapMarker({ x, z, icon: '📋', label: title, kind: 'board' });
 }
 
 // diner booths + neon arcade screen
@@ -164,6 +166,7 @@ export function dock() {   // wooden pier from the south road into lake #2
   for (let i = 0; i < 4; i++) for (const s of [-1.5, 1.5]) mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.8, 6), woodDark, g, s, -0.6, -D / 2 + 1 + i * 3);
   addStatic(new CANNON.Box(new CANNON.Vec3(1.7, 0.1, D / 2)), cx, 0.1, cz, rotY);
   keepOut.push({ x: sx, z: sz, r: 3 });
+  addMapMarker({ x: cx, z: cz, icon: '⚓', label: 'Dermaga' });
 }
 
 export async function buildLetters() {

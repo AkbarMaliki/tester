@@ -14,6 +14,7 @@ export const inventory = {
 
 export function defineItem(def) { defs.set(def.id, { stack: 99, ...def }); return defs.get(def.id); }
 export const itemDef = (id) => defs.get(id) || { id, name: id, stack: 99 };
+export const allItems = () => [...defs.values()];   // every defined item, in definition order (shops, debug chest)
 
 const changed = () => emit('inventory:changed', inventory);
 

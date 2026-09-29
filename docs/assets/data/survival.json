@@ -1,0 +1,99 @@
+{
+  "_help": "Survival rules for systems/stats.js. All rates are per second of play (paused = frozen). 1 game hour = secondsPerGameHour of play (matches the default 60x clock), which is how sleeping N hours is simulated. Meters run 0..100 where 100 is always GOOD (bladder 100 = empty). mods are fractions added together then applied as (1 + sum): -0.3 = 30% less, -1 = off. Mod keys: healthMax staminaMax healthRegen staminaRegen speed (fractions), hunger thirst energy bladder (drain speed, fractions), health (HP per second, negative = damage), noRun (1 = can't run). Effects: cure = tags that remove it (toilet, or an item's use.cure), blocks = effect ids that can't start while it runs. See SURVIVAL.md.",
+  "secondsPerGameHour": 60,
+
+  "profile": {
+    "name": "Tester",
+    "title": "Anak petani",
+    "attributes": { "vitalitas": 5, "ketahanan": 5, "metabolisme": 5, "imunitas": 5 },
+    "_attributes": "1..10, 5 = average. vitalitas: max HP + HP regen. ketahanan: max stamina, stamina regen, run cost. metabolisme: higher = needs drain slower. imunitas: lower chance and shorter bad effects from food."
+  },
+  "attributes": [
+    { "id": "vitalitas", "name": "Vitalitas", "desc": "Darah maksimal dan kecepatan pulih." },
+    { "id": "ketahanan", "name": "Ketahanan", "desc": "Stamina maksimal, pulih stamina, hemat tenaga saat lari." },
+    { "id": "metabolisme", "name": "Metabolisme", "desc": "Makin tinggi, lapar/haus/ngantuk makin lambat." },
+    { "id": "imunitas", "name": "Imunitas", "desc": "Peluang dan lama keracunan / mual makin kecil." }
+  ],
+
+  "base": {
+    "health": 100, "healthRegen": 0.2,
+    "stamina": 100, "staminaRegen": 18, "staminaDelay": 0.9,
+    "runCost": 12, "jumpCost": 9, "runMin": 8
+  },
+  "needs": {
+    "hunger":  { "name": "Lapar",  "drain": 0.075, "runMul": 1.6, "sleepMul": 0.45 },
+    "thirst":  { "name": "Haus",   "drain": 0.11,  "runMul": 2.0, "sleepMul": 0.45 },
+    "energy":  { "name": "Energi", "drain": 0.05,  "runMul": 1.5, "sleep": 0.22 },
+    "bladder": { "name": "Kandung kemih", "drain": 0.045, "runMul": 1.0, "sleepMul": 0.5 }
+  },
+  "bladderPerThirst": 0.4,
+  "bladderPerHunger": 0.1,
+  "_caps": "Energy caps max stamina: below energyFullAt the cap shrinks linearly to energyMinCap at 0 energy.",
+  "energyFullAt": 50, "energyMinCap": 0.5,
+  "healthRegenNeeds": { "hunger": 35, "thirst": 35, "energy": 15 },
+  "wakeHealth": 25,
+
+  "conditions": [
+    { "id": "kenyang", "kind": "buff", "icon": "✦", "name": "Kenyang & segar", "desc": "Perut dan tenggorokan terisi: darah pulih lebih cepat.",
+      "above": { "hunger": 75, "thirst": 75 }, "mods": { "healthRegen": 1 } },
+    { "id": "lapar", "kind": "debuff", "icon": "🍽", "name": "Lapar", "desc": "Stamina pulih lebih lambat.",
+      "below": { "hunger": 25 }, "mods": { "staminaRegen": -0.3 }, "hideIf": "kelaparan" },
+    { "id": "kelaparan", "kind": "debuff", "icon": "🍽", "name": "Kelaparan", "desc": "Darah terus berkurang! Stamina maksimal turun.",
+      "below": { "hunger": 0.5 }, "mods": { "health": -0.3, "healthMax": -0.2, "staminaMax": -0.25, "staminaRegen": -0.5 } },
+    { "id": "haus", "kind": "debuff", "icon": "💧", "name": "Haus", "desc": "Stamina pulih jauh lebih lambat.",
+      "below": { "thirst": 25 }, "mods": { "staminaRegen": -0.4 }, "hideIf": "dehidrasi" },
+    { "id": "dehidrasi", "kind": "debuff", "icon": "💧", "name": "Dehidrasi", "desc": "Darah cepat berkurang! Minum sekarang.",
+      "below": { "thirst": 0.5 }, "mods": { "health": -0.45, "staminaMax": -0.3, "staminaRegen": -0.6 } },
+    { "id": "ngantuk", "kind": "debuff", "icon": "💤", "name": "Ngantuk", "desc": "Jalan sedikit lebih lambat.",
+      "below": { "energy": 20 }, "mods": { "speed": -0.08 }, "hideIf": "kecapekan" },
+    { "id": "kecapekan", "kind": "debuff", "icon": "💤", "name": "Kecapekan", "desc": "Tidak bisa lari, darah pelan-pelan turun. Cari tempat tidur.",
+      "below": { "energy": 0.5 }, "mods": { "speed": -0.18, "health": -0.12, "noRun": 1 } },
+    { "id": "kebelet", "kind": "debuff", "icon": "🚽", "name": "Kebelet", "desc": "Susah konsentrasi: stamina pulih lebih lambat.",
+      "below": { "bladder": 25 }, "mods": { "staminaRegen": -0.25, "speed": -0.05 }, "hideIf": "kebelet_parah" },
+    { "id": "kebelet_parah", "kind": "debuff", "icon": "🚽", "name": "Kebelet parah", "desc": "Tidak bisa lari! Cepat cari toilet umum.",
+      "below": { "bladder": 0.5 }, "mods": { "speed": -0.25, "noRun": 1, "staminaRegen": -0.5 } }
+  ],
+
+  "_envConditions": "Season / weather conditions: env = flag set by world/seasons.js (calendar.json env, envNight, envNoon, weathers[].env) or features/survival (teduh = sheltered: gazebo, car, umbrella). notEnv = flag that switches it off, unless = timed effects that prevent it.",
+  "envConditions": [
+    { "id": "udara_semi", "kind": "buff", "icon": "🌸", "name": "Udara musim semi", "desc": "Udara segar: stamina pulih sedikit lebih cepat.",
+      "env": "semi", "mods": { "staminaRegen": 0.1 } },
+    { "id": "sejuk", "kind": "buff", "icon": "🍂", "name": "Udara sejuk", "desc": "Musim gugur: tidak mudah haus.",
+      "env": "gugur", "mods": { "thirst": -0.2 } },
+    { "id": "kepanasan", "kind": "debuff", "icon": "🥵", "name": "Kepanasan", "desc": "Terik musim panas: cepat haus, stamina pulih lebih lambat. Berteduh, atau minum air keran / Es Teh (Segar).",
+      "env": "terik", "notEnv": "teduh", "unless": ["segar"], "mods": { "thirst": 0.6, "staminaRegen": -0.15 } },
+    { "id": "kedinginan", "kind": "debuff", "icon": "🥶", "name": "Kedinginan", "desc": "Musim dingin: stamina maksimal turun & lambat pulih, cepat lapar. Minum Teh / Cokelat Hangat atau makan Sup Jamur.",
+      "env": "dingin", "unless": ["hangat", "perut_hangat"], "mods": { "staminaMax": -0.2, "staminaRegen": -0.35, "hunger": 0.35 }, "hideIf": "membeku" },
+    { "id": "membeku", "kind": "debuff", "icon": "❄", "name": "Membeku", "desc": "Malam musim dingin: darah pelan-pelan turun! Minum yang hangat atau pergi tidur.",
+      "env": "malam_dingin", "unless": ["hangat", "perut_hangat"], "mods": { "staminaMax": -0.3, "staminaRegen": -0.5, "hunger": 0.5, "health": -0.08, "healthRegen": -1 } },
+    { "id": "basah", "kind": "debuff", "icon": "💧", "name": "Basah kuyup", "desc": "Kehujanan: stamina pulih lebih lambat, cepat ngantuk. Berteduh di gazebo / mobil atau pegang Payung.",
+      "env": "hujan", "notEnv": "teduh", "mods": { "staminaRegen": -0.2, "energy": 0.3, "speed": -0.04 } },
+    { "id": "bersalju", "kind": "debuff", "icon": "🌨", "name": "Tertimbun salju", "desc": "Hujan salju: jalan lebih berat. Berteduh atau pegang Payung.",
+      "env": "salju", "notEnv": "teduh", "mods": { "speed": -0.1, "staminaRegen": -0.15 } }
+  ],
+
+  "effects": {
+    "keracunan": { "kind": "debuff", "icon": "☠", "name": "Keracunan", "desc": "Darah turun, stamina maksimal berkurang, perut cepat lapar. Sembuh sendiri, pakai toilet umum, atau minum Penawar Racun.",
+      "duration": 150, "mods": { "health": -0.22, "healthMax": -0.2, "staminaMax": -0.35, "healthRegen": -1, "hunger": 0.6 }, "cure": ["toilet", "penawar"], "immunity": true },
+    "mual": { "kind": "debuff", "icon": "🤢", "name": "Mual", "desc": "Stamina pulih lebih lambat. Hilang sendiri, ke toilet, atau makan jahe.",
+      "duration": 70, "mods": { "staminaRegen": -0.45 }, "cure": ["toilet", "penawar", "jahe"], "immunity": true },
+    "ngos": { "kind": "debuff", "quiet": true, "icon": "😮‍💨", "name": "Ngos-ngosan", "desc": "Stamina habis. Tunggu sebentar sebelum bisa lari lagi.",
+      "duration": 3.5, "mods": { "noRun": 1 } },
+    "berenergi": { "kind": "buff", "icon": "⚡", "name": "Energi buah", "desc": "Gula alami: stamina pulih lebih cepat.",
+      "duration": 90, "mods": { "staminaRegen": 0.6 } },
+    "segar": { "kind": "buff", "icon": "💦", "name": "Segar", "desc": "Air dingin: stamina maksimal naik sedikit.",
+      "duration": 120, "mods": { "staminaMax": 0.1, "staminaRegen": 0.2 } },
+    "bugar": { "kind": "buff", "icon": "☀", "name": "Cukup tidur", "desc": "Tidur nyenyak: stamina maksimal naik, darah pulih lebih cepat.",
+      "duration": 480, "mods": { "staminaMax": 0.2, "healthRegen": 0.5, "energy": -0.4 } },
+    "kebal_racun": { "kind": "buff", "icon": "🛡", "name": "Kebal racun", "desc": "Penawar masih bekerja: tidak bisa keracunan.",
+      "duration": 240, "mods": {}, "blocks": ["keracunan"] },
+    "melek": { "kind": "buff", "icon": "☕", "name": "Melek", "desc": "Kafein: energi turun jauh lebih lambat, tapi jadi cepat kebelet.",
+      "duration": 240, "mods": { "energy": -0.6, "bladder": 0.5 } },
+    "perut_hangat": { "kind": "buff", "icon": "🍲", "name": "Perut hangat", "desc": "Makanan hangat: lapar turun lebih lambat, darah pulih lebih cepat.",
+      "duration": 300, "mods": { "hunger": -0.5, "healthRegen": 0.5 } },
+    "hangat": { "kind": "buff", "icon": "☕", "name": "Hangat", "desc": "Minuman hangat: kebal Kedinginan & Membeku untuk sementara.",
+      "duration": 300, "mods": { "staminaRegen": 0.1 } },
+    "lega": { "kind": "buff", "icon": "😌", "name": "Lega", "desc": "Plong! Jalan sedikit lebih cepat.",
+      "duration": 60, "mods": { "speed": 0.06 } }
+  }
+}

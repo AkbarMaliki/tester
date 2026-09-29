@@ -15,11 +15,13 @@
 // (stored as a string because Firebase drops nulls/empty arrays and turns sparse arrays into objects).
 import { emit } from '../engine/events.js';
 import { createFirebase } from '../engine/firebase.js';
-import { FIREBASE, SAVE_ROOT, AUTOSAVE_EVERY } from '../game/config.js';
+import { FIREBASE, SAVE_ROOT } from '../game/config.js';
 
 export const SAVE_VERSION = 1;                       // version of the save envelope itself
 export const SAVE_SLOTS = ['auto', 'slot1', 'slot2', 'slot3'];
-export const slotName = (s) => (s === 'auto' ? 'Simpan otomatis' : 'Slot ' + s.slice(4));
+// 'auto' = the save made when going to bed (key kept so older saves still load); 'reload' = dev-only hidden snapshot
+const NAMES = { auto: 'Simpanan tidur', reload: 'Muat ulang (dev)' };
+export const slotName = (s) => NAMES[s] || 'Slot ' + s.slice(4);
 
 const parts = new Map();
 export function registerSave(key, part) {
@@ -56,7 +58,7 @@ function apply(data) {
 }
 export function newGame() {
   for (const p of parts.values()) p.reset();
-  session.playTime = 0; session.slot = null; sinceAuto = 0;
+  session.playTime = 0; session.slot = null;
   emit('save:applied', { slot: null });
 }
 
@@ -88,18 +90,18 @@ export async function latestSave() {
   return all.sort((a, b) => b.meta.savedAt - a.meta.savedAt)[0] || null;
 }
 
-// returns 'cloud' | 'local' | null (failed everywhere)
-export async function saveGame(slot, { keepalive = false } = {}) {
+// returns 'cloud' | 'local' | null (failed everywhere). localOnly: skip the cloud (dev reload snapshot)
+export async function saveGame(slot, { keepalive = false, localOnly = false } = {}) {
   const snap = snapshot();
   const okLocal = local.write(slot, snap);
   let where = okLocal ? 'local' : null;
-  if (fb.enabled) {
+  if (fb.enabled && !localOnly) {
     try {
       await fb.update(await node(), { [`meta/${slot}`]: snap.meta, [`slots/${slot}`]: JSON.stringify(snap.data) }, { keepalive });
       where = 'cloud'; cloud.online = true;
     } catch (e) { console.warn('save: cloud save failed, kept locally', e.message); cloud.online = false; }
   }
-  if (where) { session.slot = slot; if (slot === 'auto') sinceAuto = 0; emit('save:saved', { slot, where, meta: snap.meta }); }
+  if (where) { if (!localOnly) session.slot = slot; emit('save:saved', { slot, where, meta: snap.meta }); }
   return where;
 }
 // loads the newest copy of `slot`; returns 'cloud' | 'local' | null (nothing there)
@@ -120,7 +122,7 @@ export async function loadGame(slot) {
   if (!snap && l) { snap = l; where = 'local'; }
   if (!snap) return null;
   apply(snap.data);
-  session.playTime = snap.meta.playTime || 0; session.slot = slot; sinceAuto = 0;
+  session.playTime = snap.meta.playTime || 0; session.slot = slot;
   emit('save:applied', { slot, meta: snap.meta });
   return where;
 }
@@ -132,13 +134,8 @@ export async function deleteSave(slot) {
   }
 }
 
-// ---------------------------------------------------------------- play clock + autosave (called every frame by main.js)
-let sinceAuto = 0, autoBusy = false;
+// ---------------------------------------------------------------- play clock (called every frame by main.js)
+// No timed autosave: like Harvest Moon the game is saved when you go to bed (features/survival -> saveGame('auto')).
 export function updateSave(dt, playing) {
-  if (!playing) return;
-  session.playTime += dt; sinceAuto += dt;
-  if (sinceAuto > AUTOSAVE_EVERY && !autoBusy) {
-    autoBusy = true; sinceAuto = 0;
-    saveGame('auto').finally(() => { autoBusy = false; });
-  }
+  if (playing) session.playTime += dt;
 }

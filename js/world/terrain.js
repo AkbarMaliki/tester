@@ -29,7 +29,7 @@ export function buildTerrain() {
 
 export const WU = {
   uTime: U.uTime, uMask: U.uMask, uDeep: { value: new THREE.Color() }, uShallow: { value: new THREE.Color() },
-  uFoam: { value: new THREE.Color() }, uFoamI: { value: 1 }, uFog: { value: new THREE.Color() }, uCam: { value: camera.position },
+  uFoam: { value: new THREE.Color() }, uFoamI: { value: 1 }, uFog: { value: new THREE.Color() }, uFogNF: { value: new THREE.Vector2(45, 115) }, uCam: { value: camera.position },
 };
 export function buildWater() {
   const m = shaderMat('water.vert', 'water.frag', { uniforms: WU, transparent: true });

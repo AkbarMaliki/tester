@@ -9,9 +9,12 @@ import { groundY, maskAt } from '../../world/worldmap.js';
 import { WU } from '../../world/terrain.js';
 import { car, chassisBody, drive, setDoor, isUpsideDown, unflip } from '../car/car.js';
 import { smoke } from '../../world/effects.js';
+import { stampFootprint } from '../../world/footprints.js';
 import { sfx } from '../../engine/audio.js';
 import { avatar, squash, J, HIP_Y } from './model.js';
+import { faceState, updateFace } from './face.js';
 import { registerSave } from '../../systems/save.js';
+import { canRun, runStamina, tryJump, speedMul, hasEffect } from '../../systems/stats.js';
 
 export { avatar };
 const WALK = 3.4, RUN = 7, JUMP = 6.2;
@@ -45,7 +48,7 @@ function probeGround(x, z, fromY) {
 export const player = { mode: 'foot', wantExit: false };
 const st = {
   t: 0, yaw: PLAYER_SPAWN.yaw, phase: 0, hs: 0, grounded: true, lastGround: 0, jumpBuf: -1, prevJump: 0, airVy: 0,
-  stretch: 0, squash: 0, airW: 0, cheer: 0, carry: false, carryW: 0, idleT: 0, blink: 3, blinkT: 0, inWater: false,
+  stretch: 0, squash: 0, airW: 0, cheer: 0, tiredW: 0, breathT: 0, carry: false, carryW: 0, idleT: 0, blink: 3, blinkT: 0, inWater: false,
   path: [], seqT: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), door: 0, doorGoal: 0,
 };
 export const isDriving = () => player.mode === 'car';
@@ -208,7 +211,13 @@ function footUpdate(dt, k) {
     const mag = Math.hypot(mx, mz); if (mag > 1) { mx /= mag; mz /= mag; }
   }
   st.inWater = p.y < WATER_Y - 0.2;
-  const speed = (run ? RUN : WALK) * (st.inWater ? 0.55 : 1);
+  // stamina (systems/stats.js): sprinting drains it, needs/effects can forbid running or slow the kid down
+  const moving = Math.hypot(mx, mz) > 0.3;
+  if (player.mode === 'foot') {
+    run = run && moving && canRun();
+    if (run && st.grounded) runStamina(dt);
+  }
+  const speed = (run ? RUN : WALK) * (st.inWater ? 0.55 : 1) * (player.mode === 'foot' ? speedMul() : 1);
   const a = 1 - Math.exp(-dt * (st.grounded ? 14 : 3.5));
   let vx = v.x + (mx * speed - v.x) * a, vz = v.z + (mz * speed - v.z) * a;
   for (let i = 0; i < walls.length; i += 2) {   // slide along walls instead of sticking to them
@@ -221,7 +230,7 @@ function footUpdate(dt, k) {
   // jump (with a little buffering + coyote time)
   if (k.brake && !st.prevJump) st.jumpBuf = st.t;
   st.prevJump = k.brake;
-  if (player.mode === 'foot' && st.jumpBuf >= 0 && st.t - st.jumpBuf < 0.15 && st.t - st.lastGround < 0.12) {
+  if (player.mode === 'foot' && st.jumpBuf >= 0 && st.t - st.jumpBuf < 0.15 && st.t - st.lastGround < 0.12 && tryJump()) {
     v.y = JUMP; st.jumpBuf = -1; st.lastGround = -1; st.grounded = false; st.stretch = 1; st.cheer = 0;
     sfx.jump(); puff(p, 4, 0.8);
   }
@@ -271,6 +280,7 @@ export function updatePlayer(dt, keys, active) {
 
 // ---------------------------------------------------------------- render sync + procedural animation (after the step)
 const P = {}, G = {};
+const face = faceState();
 const KEYS = ['hipsY', 'hipsYaw', 'spineX', 'spineY', 'spineZ', 'headX', 'headY', 'lHipX', 'lKnee', 'rHipX', 'rKnee',
   'lShX', 'lShZ', 'lElX', 'lElZ', 'rShX', 'rShZ', 'rElX', 'rElZ', 'mouth'];
 for (const k of KEYS) P[k] = G[k] = 0;
@@ -292,6 +302,7 @@ export function syncPlayer(dt) {
   st.phase += dt * st.hs * lerp(2.9, 2.3, runW);
   if (foot && grounded && st.hs > 0.8 && Math.floor(st.phase / Math.PI) !== Math.floor(prev / Math.PI)) {
     sfx.step(runW * 0.6);
+    if (!st.inWater) stampFootprint(avatar.position.x, avatar.position.y, avatar.position.z, st.yaw, Math.floor(st.phase / Math.PI) % 2 ? 1 : -1);
     if (runW > 0.5 || st.inWater) puff(avatar.position, st.inWater ? 3 : 1, 0.5, st.inWater ? 2.5 : 0.6);
   }
   // idle -> an occasional fist pump like the concept art
@@ -325,6 +336,22 @@ export function syncPlayer(dt) {
     mix('lShX', lerp(-0.5, -0.3, up), w); mix('lShZ', lerp(1.9, 0.6, up) + flap, w);
     mix('rShX', lerp(-0.5, 0.5, up), w); mix('rShZ', -lerp(1.9, 0.6, up) + flap, w);
     mix('lElX', -0.5, w); mix('rElX', -0.5, w); mix('spineX', 0.12, w); mix('mouth', 1.6, w);
+  }
+  // --- frosty breath when it's freezing (a little white puff in front of the face)
+  if ((st.breathT -= dt) < 0) {
+    st.breathT = frand(1.4, 2.2);
+    if (hasEffect('kedinginan') || hasEffect('membeku')) {
+      const fx = Math.sin(st.yaw), fz = Math.cos(st.yaw);
+      col.setRGB(1, 1, 1);
+      smoke.spawn(tmp.set(avatar.position.x + fx * 0.28, avatar.position.y + 1.2, avatar.position.z + fz * 0.28), tmp2.set(fx * 0.5, 0.15, fz * 0.5), 0.07, 0.9, col, 0.25);
+    }
+  }
+  // --- out of breath (stamina ran out): bent over, panting
+  st.tiredW += ((foot && hasEffect('ngos') ? 1 : 0) - st.tiredW) * (1 - Math.exp(-dt * 5));
+  if (st.tiredW > 0.01) {
+    const w = st.tiredW * (1 - st.airW), pant = Math.sin(t * 10) * 0.5 + 0.5;
+    G.spineX += (0.3 + pant * 0.05) * w; G.headX -= 0.2 * w; G.mouth += (0.4 + pant * 0.7) * w;
+    G.lShZ += 0.15 * w; G.rShZ -= 0.15 * w; G.hipsY -= 0.03 * w;
   }
   // --- landing squash
   if (st.squash > 0) {
@@ -372,6 +399,7 @@ export function syncPlayer(dt) {
   J.LA.sh.rotation.set(P.lShX, 0, P.lShZ); J.LA.el.rotation.set(P.lElX, 0, P.lElZ);
   J.RA.sh.rotation.set(P.rShX, 0, P.rShZ); J.RA.el.rotation.set(P.rElX, 0, P.rElZ);
   J.mouth.scale.set(1, P.mouth, 1);
+  updateFace(J, face, dt, t, cw > 0.3 ? 'senang' : undefined);   // expression from hunger, poison… (a cheer is always happy)
   J.bucket.rotation.x = Math.sin(st.phase * 2) * 0.3 * walkW - st.airW * 0.35 * Math.sign(v.y);
   J.basket.rotation.z = Math.sin(st.phase) * 0.12 * walkW;
   // blink

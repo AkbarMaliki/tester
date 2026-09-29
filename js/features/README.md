@@ -41,4 +41,6 @@ Emits `fishing:caught` { fish } and calls `addItem('ikan_mas')` from systems/inv
 | id | what | events |
 |---|---|---|
 | `bowling` | lane with 10 physics pins + ball, BOWLING board resets them | listens `bowling:reset` |
-| `pickup` | Harvest-Moon-style items (data: `public/assets/data/items.json`): E lift over head, E into the bag, Q put down; wild items regrow | listens `inventory:hold/drop/stash`, `player:mode`, `world:ready` |
+| `survival` | Balai Warga (drinking fountain, public toilet, gazebo bed), eating/drinking from the bag, sleep = skip time, fainting. Rules live in `systems/stats.js` (+ `SURVIVAL.md`) | listens `inventory:use`, `stats:depleted`; emits `inventory:discardHeld`, `survival:consumed`, `survival:slept` |
+| `debug` | debug chest panel (only when `DEBUG` in game/config.js): every item with its effects, take any amount, buttons to force bad states for testing | listens `debug:chest` |
+| `pickup` | Harvest-Moon-style items (data: `public/assets/data/items.json`): E lift over head, E into the bag, Q put down; wild items regrow | listens `inventory:hold/drop/stash/discardHeld`, `player:mode`, `world:ready` |

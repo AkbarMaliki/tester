@@ -25,6 +25,9 @@ export const scene = new THREE.Scene();
 scene.background = new THREE.Color();
 scene.fog = new THREE.Fog(0x000000, 45, 115);
 export const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.5, 400);
+// layer 1 = small details (grass, particles, footprints): the normal camera draws them, the map view (ui/map.js) skips them
+export const DETAIL_LAYER = 1;
+camera.layers.enable(DETAIL_LAYER);
 
 // ---------------------------------------------------------------- post-processing
 // Chain: ScenePass (scene -> own MSAA target, then NaN guard + tilt-shift in one pass)
@@ -108,6 +111,7 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -38, right: 38, top: 38, bottom: -38, near: 1, far: 160 });
 sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.05;
+sun.shadow.camera.layers.enable(1);   // DETAIL_LAYER objects still cast shadows in the normal view
 scene.add(sun, sun.target);
 
 // ---------------------------------------------------------------- shared uniforms + "painted" materials
@@ -120,6 +124,7 @@ export const U = {
   uLampI: { value: 0 }, uLampColor: { value: new THREE.Color(1.0, 0.55, 0.2) },
   uCarPos: { value: new THREE.Vector3() }, uPlayerPos: { value: new THREE.Vector3(9999, -99, 9999) }, uCarDir: { value: new THREE.Vector2(0, -1) }, uHeadI: { value: 0 },
   uWindDir: { value: new THREE.Vector2(1, 0.35).normalize() },
+  uGrassH: { value: 1 }, uLeafScale: { value: 1 }, uLeafMix: { value: 0 }, uLeafMixColor: { value: new THREE.Color(1, 1, 1) },   // season look (world/seasons.js)
 };
 
 // Palette colour + shadow mask instead of full lighting (Bruno-style flat look).

@@ -6,6 +6,8 @@ export const MAX_LAMPS = 16;                  // lamp glow slots in the ground s
 export const SPAWN = { x: 0, y: 1.6, z: 6, yaw: -Math.PI / 2 };
 export const PLAYER_SPAWN = { x: 1, z: 9.8, yaw: 0.6 };   // the kid starts next to the parked car
 export const CAM_OFFSET = [12.5, 17, 16.5];   // isometric-ish follow camera
+// Debug tools while the game is in development: the item chest in the Balai gazebo (features/debug). false = gone.
+export const DEBUG = true;
 // runtime files in public/assets/, resolved from the page URL so it works in dev, in the build and under a sub-path (GitHub Pages)
 export const ASSETS = new URL('assets/', document.baseURI).href;
 
@@ -20,4 +22,7 @@ export const FIREBASE = {
   databaseURL: env.VITE_FIREBASE_DATABASE_URL || '',
 };
 export const SAVE_ROOT = 'tester-saves';      // database node: <SAVE_ROOT>/<player id>/{meta,slots}/<slot>
-export const AUTOSAVE_EVERY = 180;            // seconds of play between autosaves
+// Harvest Moon style: the game saves when the kid goes to bed (features/survival), no timed autosave.
+// Dev server only (npx vite): it reloads the page whenever a source file is saved. Instead of dropping back to the
+// main menu, a tab that was playing continues from a local 'reload' snapshot written on the way out (ui/menu.js).
+export const RESUME_AFTER_RELOAD = !!env.DEV;

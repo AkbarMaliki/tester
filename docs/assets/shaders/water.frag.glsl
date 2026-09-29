@@ -1,6 +1,7 @@
 uniform sampler2D uMask;
 uniform float uTime, uFoamI;
 uniform vec3 uDeep, uShallow, uFoam, uFog, uCam;
+uniform vec2 uFogNF;   // scene fog near / far (world/sky.js)
 varying vec3 vW;
 
 float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -28,6 +29,6 @@ void main() {
   streak += (1. - smoothstep(0., .35, wd)) * .8;
   col = mix(col, uFoam * uFoamI, clamp(streak, 0., 1.) * .9);
 
-  col = mix(col, uFog, smoothstep(45., 115., distance(uCam, vW)));
+  col = mix(col, uFog, smoothstep(uFogNF.x, uFogNF.y, distance(uCam, vW)));
   gl_FragColor = vec4(col, smoothstep(0., .08, depth));
 }

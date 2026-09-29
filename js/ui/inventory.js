@@ -2,13 +2,14 @@
 // item details and the Pegang / Buang buttons. The data lives in systems/inventory.js; world actions are only
 // requested through events, so whichever feature owns the 3D side (features/pickup) carries them out:
 //   inventory:hold {slot}  take one out into the hands      inventory:drop {slot}  put one on the ground (slot -1 = the hands)
-//   inventory:stash        put the held item into the bag
+//   inventory:stash        put the held item into the bag       inventory:use {slot}   eat / drink one (features/survival)
 import { $ } from '../engine/util.js';
 import { on, emit } from '../engine/events.js';
 import { sfx } from '../engine/audio.js';
 import { clearKeys } from '../systems/input.js';
 import { inventory, itemDef, moveSlot, countOf, SLOTS } from '../systems/inventory.js';
 import { ui, toast } from './ui.js';
+import { mountPreview } from './preview.js';
 
 const HAND = -1;
 let sel = null;   // selected slot index, HAND, or null
@@ -19,7 +20,7 @@ export function toggleInventory(open = !isOpen()) {
   if (open && (!ui.started || $('modal').classList.contains('show'))) return;
   if (open === isOpen()) return;
   $('inventory').classList.toggle('show', open);
-  if (open) { clearKeys(); sel = null; render(); }
+  if (open) { clearKeys(); sel = null; render(); mountPreview($('invPreview')); }
   sfx.pop();
 }
 
@@ -33,9 +34,10 @@ function detailHtml() {
   const id = sel === HAND ? inventory.held : sel !== null && inventory.slots[sel]?.id;
   if (!id) return `<p class="inv-empty">${inventory.slots.some(Boolean) || inventory.held ? 'Pilih barang untuk melihat detailnya.' : 'Tas masih kosong.<br>Dekati barang di taman lalu tekan <kbd>E</kbd>.'}</p>`;
   const d = itemDef(id), n = sel === HAND ? 1 : inventory.slots[sel].n;
-  const btns = sel === HAND
+  const use = d.use ? `<button data-act="use" class="use">${d.use.verb || 'Pakai'}</button>` : '';
+  const btns = use + (sel === HAND
     ? '<button data-act="stash">Simpan ke tas</button><button data-act="drop" class="alt">Taruh</button>'
-    : `<button data-act="hold"${inventory.held ? ' title="Tanganmu penuh: barang yang dipegang akan disimpan dulu"' : ''}>Pegang</button><button data-act="drop" class="alt">Buang 1</button>`;
+    : `<button data-act="hold"${inventory.held ? ' title="Tanganmu penuh: barang yang dipegang akan disimpan dulu"' : ''}>Pegang</button><button data-act="drop" class="alt">Buang 1</button>`);
   return `<div class="inv-big">${icon(id)}</div><h3 class="amatic">${d.name}</h3>`
     + (d.desc ? `<p>${d.desc}</p>` : '')
     + `<p class="inv-meta">${sel === HAND ? 'Sedang dipegang' : `Jumlah: <b>${n}</b>`}${sel === HAND && countOf(id) ? ` · di tas: <b>${countOf(id)}</b>` : ''}${d.price ? ` · harga <b>${d.price} G</b>` : ''}</p>`
@@ -67,8 +69,10 @@ function act(what) {
   if (what === 'hold') n = emit('inventory:hold', { slot });
   else if (what === 'drop') n = emit('inventory:drop', { slot });
   else if (what === 'stash') n = emit('inventory:stash');
+  else if (what === 'use') n = emit('inventory:use', { slot });
   if (!n) toast('Belum bisa dilakukan di sini');
-  if (what === 'hold' || slot === HAND) toggleInventory(false);   // show the kid lifting / setting it down
+  if (what === 'hold' || (slot === HAND && what !== 'use')) toggleInventory(false);   // show the kid lifting / setting it down
+  else if (slot === HAND) { if (!inventory.held) sel = null; render(); }
   else { if (!inventory.slots[slot]) sel = null; render(); }
 }
 

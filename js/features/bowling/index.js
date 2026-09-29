@@ -5,9 +5,10 @@ import * as CANNON from 'cannon-es';
 import { scene, lam, glowMat, mesh, addDynamic, resetDynamic } from '../../engine/core.js';
 import { on } from '../../engine/events.js';
 import { board } from '../../world/props.js';
+import { addMapMarker } from '../../systems/mapmarkers.js';
 
 const LANE = { x: -27, z: 28, len: 20 };
-const BOARD = { x: -17, z: 36, rot: 0.62, title: 'BOWLING', label: 'Reset pin bowling', action: 'bowling:reset' };
+const BOARD = { x: -17, z: 36, rot: 0.62, title: 'BOWLING', label: 'Reset pin bowling', action: 'bowling:reset', map: false };
 const pins = [];   // pins + ball (dynamics)
 
 function buildLane({ x: cx, z: cz, len }) {
@@ -29,6 +30,7 @@ export default {
   id: 'bowling',
   build() {
     buildLane(LANE);
+    addMapMarker({ x: LANE.x, z: LANE.z, icon: '🎳', label: 'Bowling' });
     board(BOARD);
     on('bowling:reset', () => resetDynamic(pins));
   },

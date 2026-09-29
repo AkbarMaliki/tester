@@ -10,7 +10,7 @@ import { lampLights } from './props.js';
 const dir = new THREE.Vector3();
 // h = hour (0-24), p = palette from paletteAt(h), focus = point the shadow camera follows
 export function updateSky(h, p, focus) {
-  scene.background.copy(p.sky); scene.fog.color.copy(p.sky); WU.uFog.value.copy(p.sky);
+  scene.background.copy(p.sky); scene.fog.color.copy(p.sky); WU.uFog.value.copy(p.sky); WU.uFogNF.value.set(scene.fog.near, scene.fog.far);
   U.uGround.value.copy(p.ground); U.uPaved.value.copy(p.paved); U.uAsphalt.value.copy(p.asphalt);
   U.uGrassA.value.copy(p.grassA); U.uGrassB.value.copy(p.grassB); U.uShadowTint.value.copy(p.shadow); U.uLeafTint.value.copy(p.leaf);
   WU.uDeep.value.copy(p.deep); WU.uShallow.value.copy(p.shallow); WU.uFoam.value.copy(p.foam); WU.uFoamI.value = p.foamI;

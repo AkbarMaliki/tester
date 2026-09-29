@@ -4,7 +4,8 @@ import { MAX_LAMPS } from '../game/config.js';
 import { nextFrame, loadAsset } from '../engine/util.js';
 import { U, dynamics, resetDynamic } from '../engine/core.js';
 import { registerSave } from '../systems/save.js';
-import { bakeMask, keepOut, LOT } from './worldmap.js';
+import { bakeMask, keepOut, LOT, LAKES } from './worldmap.js';
+import { addMapMarker } from '../systems/mapmarkers.js';
 import { buildTerrain, buildWater } from './terrain.js';
 import { buildGrass, plantTrees, scatterRocks, scatterGroundLeaves } from './vegetation.js';
 import * as props from './props.js';
@@ -21,6 +22,11 @@ export async function buildWorld(progress, placeFeatures) {
   for (const [x, z] of [[20, 5], [-14, 16], [2, -27], [5, 20], [41, -12], [-38, 22], [30, 12]]) props.lampPost(x, z, props.lampLights.length < 9);
   for (const [x, z] of [[4, -3.5], [-6, 9], [9, 8], [35, 0], [-19, 30], [-5, -14], [47, 5], [2, -40]]) props.groundLantern(x, z);
   keepOut.push({ x: 0, z: 0, r: 13 });
+  // map view landmarks (features add their own)
+  addMapMarker({ x: 0, z: 0, icon: '⛲', label: 'Alun-alun' });
+  addMapMarker({ x: 41, z: 6, icon: '🍔', label: 'Kedai & Arkade' });
+  addMapMarker({ x: LOT.x, z: LOT.z, icon: '🅿', label: 'Parkiran' });
+  LAKES.forEach((l, i) => addMapMarker({ x: l.x, z: l.z, icon: '💧', label: i === 0 ? 'Danau Besar' : 'Danau', kind: 'water' }));
   props.dock();
   await placeFeatures();
   await nextFrame();

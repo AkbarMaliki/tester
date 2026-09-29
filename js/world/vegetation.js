@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { HALF, WATER_Y } from '../game/config.js';
 import { clamp, smooth, rnd, rand, pick } from '../engine/util.js';
-import { scene, paint, lam, mesh, group, addStatic } from '../engine/core.js';
+import { scene, paint, lam, mesh, group, addStatic, DETAIL_LAYER } from '../engine/core.js';
 import { maskAt, groundY, keepOut } from './worldmap.js';
 
 // ---------------------------------------------------------------- grass
@@ -40,7 +40,7 @@ export function buildGrass() {
     geo.setAttribute('aRand', new THREE.BufferAttribute(rr, 1));
     geo.computeBoundingSphere(); geo.boundingSphere.radius += 2;
     const me = new THREE.Mesh(geo, grassMat);
-    me.receiveShadow = true; me.userData.layer = +key.split('|')[1];
+    me.receiveShadow = true; me.userData.layer = +key.split('|')[1]; me.layers.set(DETAIL_LAYER);
     grassMeshes.push(me); scene.add(me);
   }
   return total;
@@ -146,6 +146,7 @@ export function scatterRocks(n) {
   }
   im.count = k; im.castShadow = true; im.receiveShadow = true; scene.add(im);
 }
+export const groundLeaves = { mesh: null };   // fallen leaves on the ground (world/seasons.js recolours / hides them)
 export function scatterGroundLeaves(n) {
   const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.26, 0.26).rotateX(-Math.PI / 2), lam('#8a2a44', { side: THREE.DoubleSide }), n);
   const mat = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
@@ -158,4 +159,5 @@ export function scatterGroundLeaves(n) {
     im.setMatrixAt(k++, mat);
   }
   im.count = k; im.receiveShadow = true; scene.add(im);
+  groundLeaves.mesh = im;
 }

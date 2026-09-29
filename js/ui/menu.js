@@ -1,6 +1,8 @@
 // Main menu (on the loading screen: Main Baru / Lanjutkan / Muat Game / Keluar) and the in-game pause menu
 // (☰ button or Esc: save to a slot, load, controls, back to the main menu). Saving itself is systems/save.js.
 import { $ } from '../engine/util.js';
+import { on } from '../engine/events.js';
+import { RESUME_AFTER_RELOAD } from '../game/config.js';
 import { sfx } from '../engine/audio.js';
 import { clearKeys } from '../systems/input.js';
 import { snapCamera } from '../systems/camera.js';
@@ -9,6 +11,10 @@ import { ui, openModal, toast } from './ui.js';
 
 let startGame = () => {};   // main.js: switches the game on after a new game / load
 let busy = false;
+// "a game is running in this tab" (sessionStorage survives a reload of the same tab, not a new tab)
+const RESUME = 'tester.resume';
+const playing = (v) => { try { if (v) sessionStorage.setItem(RESUME, '1'); else sessionStorage.removeItem(RESUME); } catch { /* storage unavailable */ } };
+const wasPlaying = () => { try { return sessionStorage.getItem(RESUME) === '1'; } catch { return false; } };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 // ---------------------------------------------------------------- shared bits
@@ -62,7 +68,7 @@ async function begin(slot) {   // slot = null for a new game
     if (!slot) newGame();
     else if (!(await loadGame(slot))) { $('loadText').textContent = 'Simpanan tidak ditemukan.'; return; }
     $('mainMenu').classList.remove('panel');
-    snapCamera(); hideLoader(); startGame({ fresh: !slot });
+    snapCamera(); hideLoader(); startGame({ fresh: !slot }); playing(true);
   } finally { busy = false; }
 }
 async function showLoadList(target, onBack, onPick) {
@@ -82,7 +88,7 @@ async function refreshContinue() {
   $('mmStatus').textContent = cloudText();
 }
 export function showMainMenu() {
-  ui.started = false; clearKeys();
+  ui.started = false; clearKeys(); playing(false);
   $('loader').classList.remove('gone'); $('loader').style.opacity = 1;
   $('bar').style.display = 'none'; $('loadText').textContent = '';
   $('mainMenu').style.display = 'flex'; $('mainMenu').classList.remove('panel');
@@ -147,9 +153,12 @@ async function pauseAction(what) {
       } finally { busy = false; }
     });
   } else if (what === 'menu') {
-    busy = true;
-    body.innerHTML = '<h2>Menyimpan…</h2><p class="save-status">Menyimpan otomatis sebelum keluar</p>';
-    try { await saveGame('auto'); } finally { busy = false; }
+    // nothing is saved on the way out (you save by sleeping): ask once, the second click leaves
+    const b = body.querySelector('[data-p=menu]');
+    if (!b.classList.contains('confirm')) {
+      b.classList.add('confirm'); b.innerHTML = 'Yakin keluar?<small>progres sejak terakhir tidur / simpan akan hilang</small>';
+      return;
+    }
     $('pause').classList.remove('show');
     showMainMenu();
   }
@@ -165,17 +174,19 @@ export function initMenu(start) {
   addEventListener('keydown', (e) => {
     if (e.code !== 'Escape' || e.repeat || !ui.started || busy) return;
     if (pauseOpen()) { togglePause(false); return; }
-    const other = ['modal', 'settings', 'inventory'].some(id => $(id).classList.contains('show'));
+    const other = ['modal', 'settings', 'inventory', 'profile', 'fade', 'mapView'].some(id => $(id).classList.contains('show'));
     if (!other) togglePause(true);
   }, true);
-  // leaving the page: a last autosave (the local copy is synchronous, the cloud one best effort)
-  let lastLeave = 0;
-  const leave = () => {
-    if (!ui.started || Date.now() - lastLeave < 5000) return;
-    lastLeave = Date.now(); saveGame('auto', { keepalive: true });
-  };
+  // dev server only: leaving the page (= Vite reloading it) writes a local snapshot the reload continues from.
+  // Players don't get this: closing the tab keeps only what was saved by sleeping / the pause menu.
+  const leave = () => { if (RESUME_AFTER_RELOAD && ui.started) saveGame('reload', { localOnly: true }); };
   addEventListener('pagehide', leave);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); });
+  // saved by going to bed
+  on('save:saved', ({ slot, where }) => { if (slot === 'auto' && ui.started) toast(`💾 Game tersimpan (tidur) ${where === 'cloud' ? '☁' : ''}`); });
+  const resume = RESUME_AFTER_RELOAD && wasPlaying();
   showMainMenu();
+  // dev: the page was reloaded mid-game (a source file changed): carry on from the autosave `leave` just wrote
+  if (resume) begin('reload').then(() => { if (ui.started) toast('Halaman dimuat ulang (dev): melanjutkan dari sebelum reload'); });
 }
 export const autoStart = () => begin(null);   // #auto in the URL (screenshot tests)

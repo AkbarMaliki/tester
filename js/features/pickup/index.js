@@ -13,6 +13,7 @@ import { PLAYER_SPAWN } from '../../game/config.js';
 import { addZone, removeZone } from '../../systems/interaction.js';
 import { onKey } from '../../systems/input.js';
 import { registerSave } from '../../systems/save.js';
+import { today } from '../../systems/calendar.js';
 import { inventory, defineItem, itemDef, addItem, takeFrom, roomFor, setHeld } from '../../systems/inventory.js';
 import { landDist, groundY, maskAt, keepOut } from '../../world/worldmap.js';
 import { canopies } from '../../world/vegetation.js';
@@ -75,7 +76,10 @@ function addLoose(id, pos, { wild = false, pop = false } = {}) {
   if (pop) tween(obj, pos, pos, 0.4, { arc: 0.3, s0: 0.05 });
   return it;
 }
+// wild items only grow in their seasons (items.json spawn.seasons, missing = all year)
+const inSeason = (id) => { const ss = types.get(id).spawn?.seasons; return !ss || ss.includes(today().season.id); };
 function spawnWild(id, near = false) {
+  if (!inSeason(id)) return;
   const p = (near && findSpot(types.get(id).spawn.where, true)) || findSpot(types.get(id).spawn.where, false);
   if (p) addLoose(id, p, { wild: true, pop: clock > 0 }); else regrow.push({ id, at: clock + 10 });
 }
@@ -160,6 +164,21 @@ function clearAll() {
 function scatterWild() {
   for (const [id, t] of types) if (t.spawn) for (let i = 0; i < t.spawn.count; i++) spawnWild(id, i === 0);
 }
+// new season: out-of-season wild items wither away, in-season ones are topped up to their count
+function changeSeason() {
+  for (let i = loose.length - 1; i >= 0; i--) {
+    const it = loose[i];
+    if (!it.wild || inSeason(it.id)) continue;
+    loose.splice(i, 1); removeZone(it.zone);
+    tween(it.obj, it.obj.position, it.obj.position, 0.35, { s0: 1, s1: 0.01, done: () => it.obj.removeFromParent() });
+  }
+  for (let i = regrow.length - 1; i >= 0; i--) if (!inSeason(regrow[i].id)) regrow.splice(i, 1);
+  for (const [id, t] of types) {
+    if (!t.spawn || !inSeason(id)) continue;
+    const have = loose.filter(it => it.wild && it.id === id).length + regrow.filter(r => r.id === id).length;
+    for (let k = have; k < t.spawn.count; k++) spawnWild(id);
+  }
+}
 const r2 = (x) => Math.round(x * 100) / 100;
 const saveSlice = {
   save: () => ({
@@ -184,7 +203,7 @@ export default {
     const data = await loadAsset('data/items.json', 'json');
     for (const d of data.items) {
       const proto = buildModel(d.model);
-      defineItem({ id: d.id, name: d.name, desc: d.desc, stack: d.stack, price: d.price, icon: thumbnail(proto.clone(), 128) });
+      defineItem({ id: d.id, name: d.name, desc: d.desc, stack: d.stack, price: d.price, use: d.use, icon: thumbnail(proto.clone(), 128) });
       types.set(d.id, { proto, spawn: d.spawn || null });
     }
     disposeThumbnails();
@@ -192,6 +211,8 @@ export default {
     on('inventory:hold', holdFromBag);
     on('inventory:drop', dropFromBag);
     on('inventory:stash', stash);
+    // the held item was eaten / drunk (features/survival): it just disappears from the hands
+    on('inventory:discardHeld', () => { if (held) release().obj.removeFromParent(); });
     onKey('KeyQ', putDown);
     // climbing into the car: the held item goes into the bag (or is left at the door when the bag is full)
     on('player:mode', (mode) => {
@@ -202,6 +223,7 @@ export default {
     });
     // wild items are scattered once the world (and its grass mask) is finished
     on('world:ready', scatterWild);
+    on('calendar:season', changeSeason);
     registerSave('pickup', saveSlice);
   },
 

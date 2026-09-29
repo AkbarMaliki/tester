@@ -40,6 +40,7 @@
   </svg>
   <div class="t amatic"><span id="clockTime">00:00</span><span id="clockLabel">Malam</span></div>
   <div class="gear"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></div>
+  <div id="clockDate" title="Kalender (K)"></div>
 </div>
 
 <div id="settings">
@@ -58,6 +59,8 @@
     <button data-h="5.4">Subuh</button><button data-h="6.6">Fajar</button><button data-h="12">Siang</button>
     <button data-h="17.6">Sunset</button><button data-h="19">Senja</button><button data-h="23">Malam</button>
   </div>
+  <div class="row"><span>Cuaca</span><small style="opacity:.6">hari ini (kembali otomatis besok)</small></div>
+  <div class="presets weather" id="weatherBtns"></div>
   <hr>
   <div class="row"><span>Kualitas</span><select id="qualitySel"><option value="auto">Auto (disarankan)</option><option value="high">Tinggi</option><option value="mid">Sedang (laptop)</option><option value="low">Rendah</option></select></div>
   <label><input type="checkbox" id="optShadow" checked> Bayangan</label>
@@ -71,7 +74,8 @@
 
 <div class="hudbtn" id="menuBtn" title="Menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
 <div class="hudbtn" id="respawnBtn" title="Respawn (R)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/><path d="M5 21h14"/></svg></div>
-<div class="hudbtn" id="muteBtn" title="Suara (M)"><svg viewBox="0 0 24 24" id="muteIcon"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
+<div class="hudbtn" id="mapBtn" title="Peta (M)"><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></div>
+<div class="hudbtn" id="muteBtn" title="Suara (N)"><svg viewBox="0 0 24 24" id="muteIcon"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></div>
 
 <div id="camPad" title="Kamera — atau drag layar untuk memutar, scroll untuk zoom">
   <button data-cam="left" title="Putar kiri (Z)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M6 2.5v4h4"/></svg></button>
@@ -91,6 +95,7 @@
   <div class="inv-card">
     <div class="inv-head"><h2 class="amatic">Tas</h2><span class="inv-cap" id="invCap"></span><button class="inv-x" id="invClose" title="Tutup (I / Esc)">✕</button></div>
     <div class="inv-body">
+      <div class="char-preview" id="invPreview"></div>
       <div>
         <div class="inv-grid" id="invGrid"></div>
         <p class="inv-tip">Klik untuk memilih · seret untuk memindah</p>
@@ -103,8 +108,31 @@
   </div>
 </div>
 
+<div id="vitals" title="Profil karakter (P)">
+  <div id="fxRow"></div>
+  <div id="needRow"></div>
+  <div class="vbar" id="hpBar"></div>
+  <div class="vbar" id="stBar"></div>
+</div>
+
+<div id="profile">
+  <div class="inv-card pf-card">
+    <div class="inv-head"><h2 class="amatic">Profil</h2><span class="inv-cap">Karakter &amp; kondisi tubuh</span><button class="inv-x" id="profileClose" title="Tutup (P / Esc)">✕</button></div>
+    <div class="pf-wrap"><div class="char-preview" id="pfPreview"></div><div id="profileBody"></div></div>
+  </div>
+</div>
+
+<canvas id="mapSnap"></canvas>
+<div id="mapView">
+  <div class="map-head"><h2 class="amatic">Peta</h2><span id="mapDate"></span><span class="map-hint"><kbd>M</kbd> / <kbd>Esc</kbd> tutup</span><button class="inv-x" id="mapClose" title="Tutup (M)">✕</button></div>
+  <div id="mapMarkers"></div>
+  <div class="map-compass">U<i>▲</i></div>
+</div>
+
+<div id="fade"><p class="amatic" id="fadeText"></p></div>
+
 <div id="prompt" class="amatic"></div>
-<div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera</div>
+<div id="hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>P</kbd> profil · <kbd>K</kbd> kalender · <kbd>M</kbd> peta · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera</div>
 
 <div id="modal"><div class="card"><div id="modalBody"></div><button class="close" id="modalClose">Tutup</button></div></div>
 
@@ -120,6 +148,11 @@
     <tr><td><kbd>E</kbd></td><td>Ambil barang (diangkat di atas kepala), <kbd>E</kbd> lagi = simpan ke tas</td></tr>
     <tr><td><kbd>Q</kbd></td><td>Taruh barang yang dipegang ke tanah</td></tr>
     <tr><td><kbd>I</kbd> / ikon tas</td><td>Buka tas: pilih barang lalu Pegang / Buang, seret untuk memindah</td></tr>
+    <tr><td colspan="2"><b>Bertahan hidup</b></td></tr>
+    <tr><td><kbd>P</kbd> / panel kiri bawah</td><td>Profil karakter: atribut, kondisi, efek aktif</td></tr>
+    <tr><td><kbd>K</kbd> / tanggal kiri atas</td><td>Kalender: musim, hari, festival, cuaca besok</td></tr>
+    <tr><td>Tas → Makan / Minum</td><td>Isi lapar &amp; haus (jamur dan telur mentah bisa bikin sakit)</td></tr>
+    <tr><td>Balai Warga</td><td>Keran air minum, toilet umum, gazebo untuk tidur</td></tr>
     <tr><td colspan="2"><b>Di mobil</b></td></tr>
     <tr><td><kbd>W</kbd><kbd>↑</kbd></td><td>Maju</td></tr><tr><td><kbd>S</kbd><kbd>↓</kbd></td><td>Mundur</td></tr>
     <tr><td><kbd>A</kbd><kbd>D</kbd></td><td>Belok</td></tr><tr><td><kbd>Shift</kbd></td><td>Boost</td></tr>
@@ -129,7 +162,8 @@
     <tr><td><kbd>E</kbd></td><td>Interaksi (berlian putih)</td></tr>
     <tr><td><kbd>Esc</kbd> / tombol ☰</td><td>Menu jeda: simpan game, muat game, kembali ke menu utama</td></tr>
     <tr><td><kbd>T</kbd></td><td>Panel waktu &amp; pengaturan</td></tr><tr><td><kbd>[</kbd><kbd>]</kbd></td><td>Geser jam ±1</td></tr>
-    <tr><td><kbd>M</kbd></td><td>Suara on/off</td></tr>
+    <tr><td><kbd>M</kbd> / tombol 🗺</td><td>Peta (pandangan burung seluruh dunia)</td></tr>
+    <tr><td><kbd>N</kbd></td><td>Suara on/off</td></tr>
     <tr><td>Drag mouse / jari</td><td>Putar kamera</td></tr><tr><td>Scroll / cubit</td><td>Zoom kamera</td></tr>
     <tr><td><kbd>Z</kbd><kbd>X</kbd></td><td>Putar kamera kiri/kanan</td></tr><tr><td><kbd>-</kbd><kbd>=</kbd></td><td>Zoom out/in</td></tr>
     <tr><td><kbd>C</kbd> / klik ganda</td><td>Reset kamera</td></tr>

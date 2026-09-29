@@ -1,13 +1,13 @@
 // Particles (smoke / dust / splash / boost flames), wind lines and fireflies.
 import * as THREE from 'three';
 import { frand } from '../engine/util.js';
-import { scene, U, shaderMat } from '../engine/core.js';
+import { scene, U, shaderMat, DETAIL_LAYER } from '../engine/core.js';
 
 export class Puffs {
   constructor(n, material) {
     this.n = n; this.i = 0; this.p = [];
     this.im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material, n);
-    this.im.frustumCulled = false; this.im.castShadow = false;
+    this.im.frustumCulled = false; this.im.castShadow = false; this.im.layers.set(DETAIL_LAYER);
     const zero = new THREE.Matrix4().makeScale(0, 0, 0), c = new THREE.Color(1, 1, 1);
     for (let k = 0; k < n; k++) {
       this.p.push({ life: 1, max: 1, pos: new THREE.Vector3(), vel: new THREE.Vector3(), size: 1, rise: 0, rot: 0 });
@@ -49,7 +49,7 @@ function makeWindLine() {
   const m = shaderMat('wind.vert', 'wind.frag', {
     uniforms: { uColor: WINDU.uColor, uHead: { value: 0 } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
   });
-  const me = new THREE.Mesh(geo, m); me.frustumCulled = false; me.visible = false; scene.add(me);
+  const me = new THREE.Mesh(geo, m); me.frustumCulled = false; me.visible = false; me.layers.set(DETAIL_LAYER); scene.add(me);
   return { me, t: 0, dur: 1, N };
 }
 for (let i = 0; i < 4; i++) windLines.push(makeWindLine());
@@ -90,5 +90,5 @@ export const flies = (() => {
   for (let i = 0; i < n; i++) { pos[i * 3] = frand(-80, 80); pos[i * 3 + 1] = frand(0.4, 4); pos[i * 3 + 2] = frand(-80, 80); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const p = new THREE.Points(g, new THREE.PointsMaterial({ color: new THREE.Color(3, 1.8, 0.8), size: 0.14, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-  scene.add(p); return p;
+  p.layers.set(DETAIL_LAYER); scene.add(p); return p;
 })();
