@@ -6,15 +6,17 @@
 import { $ } from '../engine/util.js';
 import { on, emit } from '../engine/events.js';
 import { sfx } from '../engine/audio.js';
-import { clearKeys } from '../systems/input.js';
+import { clearKeys, is, keyOf } from '../systems/input.js';
 import { inventory, itemDef, moveSlot, countOf, SLOTS } from '../systems/inventory.js';
+import { wallet, fmtGold, incomingTotal } from '../systems/wallet.js';
+import { hotbar, HOTBAR, assign, assignFree, unassign, slotOf } from '../systems/hotbar.js';
 import { ui, toast } from './ui.js';
 import { mountPreview } from './preview.js';
 
 const HAND = -1;
 let sel = null;   // selected slot index, HAND, or null
 const isOpen = () => $('inventory').classList.contains('show');
-const cells = [];
+const cells = [], hbCells = [];
 
 export function toggleInventory(open = !isOpen()) {
   if (open && (!ui.started || $('modal').classList.contains('show'))) return;
@@ -32,12 +34,13 @@ const slotHtml = (s) => (s ? icon(s.id) + (s.n > 1 ? `<b>${s.n}</b>` : '') : '')
 
 function detailHtml() {
   const id = sel === HAND ? inventory.held : sel !== null && inventory.slots[sel]?.id;
-  if (!id) return `<p class="inv-empty">${inventory.slots.some(Boolean) || inventory.held ? 'Pilih barang untuk melihat detailnya.' : 'Tas masih kosong.<br>Dekati barang di taman lalu tekan <kbd>E</kbd>.'}</p>`;
+  if (!id) return `<p class="inv-empty">${inventory.slots.some(Boolean) || inventory.held ? 'Pilih barang untuk melihat detailnya.' : `Tas masih kosong.<br>Dekati barang di taman lalu tekan <kbd>${keyOf('interact')}</kbd>.`}</p>`;
   const d = itemDef(id), n = sel === HAND ? 1 : inventory.slots[sel].n;
   const use = d.use ? `<button data-act="use" class="use">${d.use.verb || 'Pakai'}</button>` : '';
+  const hb = `<button data-act="hb" class="alt">${slotOf(id) >= 0 ? `Lepas shortcut ${slotOf(id) + 1}` : 'Jadikan shortcut'}</button>`;
   const btns = use + (sel === HAND
     ? '<button data-act="stash">Simpan ke tas</button><button data-act="drop" class="alt">Taruh</button>'
-    : `<button data-act="hold"${inventory.held ? ' title="Tanganmu penuh: barang yang dipegang akan disimpan dulu"' : ''}>Pegang</button><button data-act="drop" class="alt">Buang 1</button>`);
+    : `<button data-act="hold"${inventory.held ? ' title="Tanganmu penuh: barang yang dipegang akan disimpan dulu"' : ''}>Pegang</button><button data-act="drop" class="alt">Buang 1</button>`) + hb;
   return `<div class="inv-big">${icon(id)}</div><h3 class="amatic">${d.name}</h3>`
     + (d.desc ? `<p>${d.desc}</p>` : '')
     + `<p class="inv-meta">${sel === HAND ? 'Sedang dipegang' : `Jumlah: <b>${n}</b>`}${sel === HAND && countOf(id) ? ` · di tas: <b>${countOf(id)}</b>` : ''}${d.price ? ` · harga <b>${d.price} G</b>` : ''}</p>`
@@ -51,8 +54,9 @@ function render() {
   });
   $('invHand').innerHTML = inventory.held ? icon(inventory.held) : '';
   $('invHand').classList.toggle('full', !!inventory.held); $('invHand').classList.toggle('sel', sel === HAND);
-  $('invCap').textContent = `${inventory.slots.filter(Boolean).length}/${SLOTS} slot`;
+  $('invCap').textContent = `${inventory.slots.filter(Boolean).length}/${SLOTS} slot · 💰 ${fmtGold(wallet.gold)}`;
   $('invDetail').innerHTML = detailHtml();
+  hbCells.forEach((c, i) => { const id = hotbar.slots[i]; c.innerHTML = (id ? icon(id) : '') + `<span>${i + 1}</span>`; c.classList.toggle('full', !!id); c.title = id ? `${itemDef(id).name} · klik = lepas` : 'Seret barang ke sini'; });
 }
 function renderBadge() {
   const n = inventory.slots.reduce((c, s) => c + (s ? s.n : 0), 0);
@@ -66,6 +70,11 @@ function select(i) {
 function act(what) {
   const slot = sel;
   let n = 0;
+  if (what === 'hb') {   // shortcut bar (systems/hotbar.js)
+    const id = slot === HAND ? inventory.held : inventory.slots[slot]?.id, at = slotOf(id);
+    if (at >= 0) unassign(at); else if (assignFree(id) < 0) toast('Shortcut penuh. Seret ke slot yang mau diganti');
+    sfx.step(0.5); render(); return;
+  }
   if (what === 'hold') n = emit('inventory:hold', { slot });
   else if (what === 'drop') n = emit('inventory:drop', { slot });
   else if (what === 'stash') n = emit('inventory:stash');
@@ -87,15 +96,17 @@ function dragMove(e) {
     document.body.append(drag.ghost); cells[drag.from].classList.add('dragging');
   }
   drag.ghost.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%) scale(1.1)`;
-  const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('#invGrid .slot');
-  for (const c of cells) c.classList.toggle('over', c === over && c !== cells[drag.from]);
+  const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('#invGrid .slot, #invHotbar .slot');
+  for (const c of [...cells, ...hbCells]) c.classList.toggle('over', c === over && c !== cells[drag.from]);
 }
 function dragEnd(e) {
   if (!drag) return;
   const d = drag; drag = null;
   if (!d.ghost) { if (e.type === 'pointerup') select(d.from); return; }
   d.ghost.remove();
-  for (const c of cells) c.classList.remove('over', 'dragging');
+  for (const c of [...cells, ...hbCells]) c.classList.remove('over', 'dragging');
+  const hb = e.type === 'pointerup' && document.elementFromPoint(e.clientX, e.clientY)?.closest('#invHotbar .slot');
+  if (hb && inventory.slots[d.from]) { assign(+hb.dataset.i, inventory.slots[d.from].id); sfx.step(0.6); render(); return; }
   const over = e.type === 'pointerup' && document.elementFromPoint(e.clientX, e.clientY)?.closest('#invGrid .slot');
   if (over && +over.dataset.i !== d.from) { moveSlot(d.from, +over.dataset.i); sel = +over.dataset.i; sfx.step(0.6); }
   render();
@@ -106,6 +117,12 @@ export function initInventoryUI() {
     const c = document.createElement('div'); c.className = 'slot'; c.dataset.i = i;
     $('invGrid').append(c); cells.push(c);
   }
+  for (let i = 0; i < HOTBAR; i++) {
+    const c = document.createElement('div'); c.className = 'slot'; c.dataset.i = i;
+    $('invHotbar').append(c); hbCells.push(c);
+  }
+  $('invHotbar').onclick = (e) => { const c = e.target.closest('.slot'); if (c && hotbar.slots[+c.dataset.i]) { unassign(+c.dataset.i); sfx.drop(); } };
+  on('hotbar:changed', () => { if (isOpen()) render(); });
   $('invGrid').addEventListener('pointerdown', (e) => {
     const c = e.target.closest('.slot');
     if (c && e.button === 0) { drag = { from: +c.dataset.i, x: e.clientX, y: e.clientY, ghost: null }; e.preventDefault(); }
@@ -121,7 +138,8 @@ export function initInventoryUI() {
   $('bagBtn').onclick = () => toggleInventory();
   addEventListener('keydown', (e) => {
     if (e.repeat || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-    if (e.code === 'KeyI' || e.code === 'Tab') { e.preventDefault(); toggleInventory(); }
+    if (document.body.classList.contains('rebinding')) return;
+    if (is(e.code, 'bag')) { e.preventDefault(); toggleInventory(); }
     else if (e.code === 'Escape') toggleInventory(false);
   });
 
@@ -131,5 +149,20 @@ export function initInventoryUI() {
     $('bagBtn').classList.remove('bump'); void $('bagBtn').offsetWidth; $('bagBtn').classList.add('bump');
   });
   on('inventory:full', () => toast('Tas penuh!'));
+  // money (systems/wallet.js): shown under the date in the clock panel (top-left); click = open the bag
+  $('clockGold').onclick = (e) => { e.stopPropagation(); toggleInventory(true); };
+  const showGold = () => {
+    const inc = incomingTotal();
+    $('goldAmt').textContent = fmtGold(wallet.gold);
+    $('goldIn').textContent = inc ? `+${fmtGold(inc)} besok` : '';
+    $('clockGold').title = inc ? `Uang · ${fmtGold(inc)} lagi dibayar besok pagi (Kotak Kirim) · klik: buka tas` : 'Uang (klik: buka tas)';
+    if (isOpen()) render();
+  };
+  on('wallet:changed', ({ delta }) => {
+    showGold();
+    if (!delta) return;
+    const el = $('clockGold'); el.classList.remove('up', 'down'); void el.offsetWidth; el.classList.add(delta > 0 ? 'up' : 'down');
+  });
+  showGold();
   renderBadge();
 }

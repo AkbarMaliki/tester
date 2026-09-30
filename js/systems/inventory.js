@@ -1,7 +1,9 @@
 // Inventory: item definitions + a fixed grid of slots holding stacks, plus the one item held in the hands
 // (Harvest Moon style: you carry one thing over your head, the rest lives in the bag).
 // Pure data + events, no DOM and no 3D: the HUD (ui/inventory.js) and features only talk to it through here.
-//   item def = { id, name, desc?, stack?: max per slot, icon?: image url, color?: fallback css colour, price? }
+//   item def = { id, name, desc?, stack?: max per slot, icon?: image url, color?: fallback css colour, price?,
+//                proto?: Object3D the world copy is cloned from (features/pickup: hold over the head, drop on the ground),
+//                variant?: true = a quality/colour copy of another item (hidden from lists like the debug chest) }
 import { emit } from '../engine/events.js';
 import { registerSave } from './save.js';
 

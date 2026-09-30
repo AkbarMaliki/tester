@@ -125,6 +125,9 @@ export const U = {
   uCarPos: { value: new THREE.Vector3() }, uPlayerPos: { value: new THREE.Vector3(9999, -99, 9999) }, uCarDir: { value: new THREE.Vector2(0, -1) }, uHeadI: { value: 0 },
   uWindDir: { value: new THREE.Vector2(1, 0.35).normalize() },
   uGrassH: { value: 1 }, uLeafScale: { value: 1 }, uLeafMix: { value: 0 }, uLeafMixColor: { value: new THREE.Color(1, 1, 1) },   // season look (world/seasons.js)
+  uDead: { value: 0 }, uDeadColor: { value: new THREE.Color('#8f7a4e') },   // dead grass patches (autumn / winter)
+  uSnow: { value: 0 },                                                      // snow lying on top of props (snowCover)
+  uCut: { value: null },                                                    // mown grass (world/vegetation.js cutGrass)
 };
 
 // Palette colour + shadow mask instead of full lighting (Bruno-style flat look).
@@ -143,6 +146,32 @@ export function paint(material, name) {
       .replace('#include <opaque_fragment>', f.main + '\n#include <opaque_fragment>');
   };
   return material;
+}
+// Snow on everything static in winter: upward-facing faces of these Lambert materials fade to white by U.uSnow
+// (roofs, benches, crates, lamps…). One shader tweak, no extra meshes or draw calls. main.js applies it after batching.
+const SNOW = `{ vec3 wn = inverseTransformDirection(normal, viewMatrix);
+  float sk = uSnow * smoothstep(0.45, 0.8, wn.y);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.95, 1.0), sk); }`;
+export function snowable(m) {
+  if (!m || !m.isMeshLambertMaterial || m.userData.painted || m.userData.snowy) return;
+  m.userData.snowy = true;
+  const prev = m.onBeforeCompile;
+  m.onBeforeCompile = function (sh, r) {
+    prev.call(this, sh, r);
+    sh.uniforms.uSnow = U.uSnow;
+    sh.fragmentShader = 'uniform float uSnow;\n' + sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n' + SNOW);
+  };
+  m.customProgramCacheKey = () => 'snowy';
+  m.needsUpdate = true;
+}
+// every static mesh under `root` except `exclude` roots and the detail layer (particles, items)
+export function snowCover(root, exclude) {
+  const skip = new Set();
+  for (const r of exclude) r.traverse(o => skip.add(o));
+  root.traverse((o) => {
+    if (!o.isMesh || skip.has(o) || o.layers.mask === 1 << DETAIL_LAYER) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) snowable(m);
+  });
 }
 export const shaderMat = (vert, frag, opts) => new THREE.ShaderMaterial({ vertexShader: full(vert), fragmentShader: full(frag), ...opts });
 

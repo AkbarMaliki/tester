@@ -110,26 +110,8 @@ export function gazebo(x, z, rot) {
   addStatic(new CANNON.Box(new CANNON.Vec3(0.72, 0.35, 1.2)), b.x, 0.35, b.z, rot);
   addStatic(new CANNON.Cylinder(R + 0.2, R + 0.2, 0.12, 12), x, 0.06, z);
   keepOut.push({ x, z, r: R + 1.4 });
-  const foot = world(0, bed.position.z + 1.55);   // free floor at the foot of the bed (debug chest)
   const cal = world(-1.25, bed.position.z - 0.2);   // back corner left of the bed (calendar stand)
-  return { spot: world(1.1, bed.position.z + 0.3), roof: { mats: roof, x, z, r: R + 0.6, k: 1 }, foot: { x: foot.x, z: foot.z, rot }, cal: { x: cal.x, z: cal.z, rot } };   // spot = beside the bed
-}
-
-// ---------------------------------------------------------------- storage chest (debug: every item in the game)
-// Wooden chest with iron bands and a glowing purple gem so it reads as "special". Returns where to stand.
-export function chest(x, z, rot) {
-  const g = group(x, 0.12, z, rot);
-  const band = lam('#3b3584');
-  mesh(box(1.0, 0.45, 0.6), lam('#a8703e'), g, 0, 0.23, 0);
-  const lid = mesh(cyl(0.3, 0.3, 1.0, 8, 1), lam('#c0844a'), g, 0, 0.45, 0); lid.rotation.z = Math.PI / 2; lid.scale.set(1, 1, 0.55);
-  for (const s of [-0.38, 0.38]) {
-    mesh(box(0.08, 0.47, 0.62), band, g, s, 0.23, 0, false);
-    const b = mesh(cyl(0.31, 0.31, 0.08, 8), band, g, s, 0.45, 0, false); b.rotation.z = Math.PI / 2; b.scale.set(1, 1, 0.57);
-  }
-  mesh(box(0.16, 0.2, 0.06), lam('#ffd98a'), g, 0, 0.42, 0.31, false);                       // lock
-  mesh(new THREE.OctahedronGeometry(0.1), glowMat('#c77dff', 1.4, 3.2), g, 0, 0.72, 0, false);   // debug gem
-  addStatic(new CANNON.Box(new CANNON.Vec3(0.5, 0.35, 0.3)), x, 0.35, z, rot);
-  return front(x, z, rot, 0.95);
+  return { spot: world(1.1, bed.position.z + 0.3), roof: { mats: roof, x, z, r: R + 0.6, k: 1 }, cal: { x: cal.x, z: cal.z, rot } };   // spot = beside the bed
 }
 
 // ---------------------------------------------------------------- calendar stand (easel with a tear-off calendar)

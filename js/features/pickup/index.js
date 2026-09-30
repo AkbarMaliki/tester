@@ -11,7 +11,7 @@ import { thumbnail, disposeThumbnails } from '../../engine/thumbs.js';
 import { sfx } from '../../engine/audio.js';
 import { PLAYER_SPAWN } from '../../game/config.js';
 import { addZone, removeZone } from '../../systems/interaction.js';
-import { onKey } from '../../systems/input.js';
+import { onAction, keyOf } from '../../systems/input.js';
 import { registerSave } from '../../systems/save.js';
 import { today } from '../../systems/calendar.js';
 import { inventory, defineItem, itemDef, addItem, takeFrom, roomFor, setHeld } from '../../systems/inventory.js';
@@ -62,12 +62,14 @@ function tween(obj, from, to, dur, { arc = 0, s0 = 1, s1 = 1, done } = {}) {
   for (let i = tweens.length - 1; i >= 0; i--) if (tweens[i].obj === obj) tweens.splice(i, 1);
   tweens.push(tw); obj.position.copy(from); obj.scale.setScalar(s0);
 }
+// world model of an item: ours (items.json) or one another feature attached to its item def (defineItem({ proto }))
+const protoOf = (id) => types.get(id)?.proto || itemDef(id).proto || null;
 const forward = (d) => v.set(Math.sin(avatar.rotation.y) * d, 0, Math.cos(avatar.rotation.y) * d);
 const onFoot = () => player.mode === 'foot' && avatar.visible;
 
 // ---------------------------------------------------------------- items lying in the world
 function addLoose(id, pos, { wild = false, pop = false } = {}) {
-  const obj = types.get(id).proto.clone();
+  const obj = protoOf(id).clone();
   obj.position.copy(pos); obj.rotation.y = Math.random() * Math.PI * 2;
   scene.add(obj);
   const it = { id, obj, wild, baseY: pos.y, hl: 0 };
@@ -87,7 +89,7 @@ function spawnWild(id, near = false) {
 // ---------------------------------------------------------------- hands: pick up, hold, stash, put down
 function hold(id, obj, fromLocal, s0 = 1) {
   held = { id, obj };
-  held.zone = addZone({ pos: avatar.position, label: `Simpan ${itemDef(id).name} ke tas · <kbd>Q</kbd> taruh`, quiet: true, action: stash });
+  held.zone = addZone({ pos: avatar.position, label: `Simpan ${itemDef(id).name} ke tas · <kbd>${keyOf('drop')}</kbd> taruh`, quiet: true, action: stash });
   setHeld(id); setCarrying(true);
   setPrompt(held.zone);   // right away, so a quick second E already means "into the bag"
   carry.add(obj); obj.rotation.set(0, 0.5, 0);
@@ -108,7 +110,7 @@ function pickUp(it) {
 }
 function stash() {
   if (!held) return;
-  if (!roomFor(held.id)) { toast('Tas penuh! Tekan <kbd>Q</kbd> untuk menaruh'); sfx.drop(); return; }
+  if (!roomFor(held.id)) { toast(`Tas penuh! Tekan <kbd>${keyOf('drop')}</kbd> untuk menaruh`); sfx.drop(); return; }
   const { id, obj } = release();
   addItem(id, 1); sfx.stash();
   tween(obj, obj.position, new THREE.Vector3(0.25, -0.75, -0.2), STASH_T, { arc: 0.2, s1: 0.1, done: () => obj.removeFromParent() });
@@ -134,21 +136,23 @@ function holdFromBag({ slot }) {
   if (!onFoot()) { toast('Keluar dari mobil dulu'); return; }
   const id = inventory.slots[slot]?.id;
   if (!id) return;
+  if (!protoOf(id)) { toast('Barang ini tidak bisa dipegang'); return; }
   takeFrom(slot, 1);
   if (held) {   // hands full: swap, the held item goes into the bag (there's room now unless it's a different full stack)
     if (!roomFor(held.id)) { addItem(id, 1); toast('Tas penuh! Taruh dulu barang yang dipegang'); return; }
     const old = release(); addItem(old.id, 1); old.obj.removeFromParent();
   }
   sfx.pick();
-  hold(id, types.get(id).proto.clone(), new THREE.Vector3(0.25, -0.8, -0.15), 0.2);   // pops out of the bag
+  hold(id, protoOf(id).clone(), new THREE.Vector3(0.25, -0.8, -0.15), 0.2);   // pops out of the bag
 }
 function dropFromBag({ slot }) {
   if (slot === -1) { putDown(); return; }
   if (!onFoot()) { toast('Keluar dari mobil dulu'); return; }
   if (overWater()) { toast('Jangan dibuang ke air!'); return; }
+  if (!protoOf(inventory.slots[slot]?.id)) { toast('Barang ini tidak bisa dibuang'); return; }
   const id = takeFrom(slot, 1);
   if (!id) return;
-  const obj = types.get(id).proto.clone();
+  const obj = protoOf(id).clone();
   scene.add(obj); obj.position.copy(avatar.position).y += 0.7;
   sfx.drop(); throwDown(id, obj);
 }
@@ -188,9 +192,9 @@ const saveSlice = {
   }),
   load(d) {
     clearAll();
-    for (const [id, x, y, z, wild] of d.items || []) if (types.has(id)) addLoose(id, new THREE.Vector3(x, y, z), { wild: !!wild });
+    for (const [id, x, y, z, wild] of d.items || []) if (protoOf(id)) addLoose(id, new THREE.Vector3(x, y, z), { wild: !!wild });
     for (const [id, left] of d.regrow || []) if (types.has(id)) regrow.push({ id, at: clock + left });
-    if (d.held && types.has(d.held)) hold(d.held, types.get(d.held).proto.clone(), new THREE.Vector3(), 1);
+    if (d.held && protoOf(d.held)) hold(d.held, protoOf(d.held).clone(), new THREE.Vector3(), 1);
   },
   reset() { clearAll(); scatterWild(); },
 };
@@ -213,7 +217,7 @@ export default {
     on('inventory:stash', stash);
     // the held item was eaten / drunk (features/survival): it just disappears from the hands
     on('inventory:discardHeld', () => { if (held) release().obj.removeFromParent(); });
-    onKey('KeyQ', putDown);
+    onAction('drop', putDown);
     // climbing into the car: the held item goes into the bag (or is left at the door when the bag is full)
     on('player:mode', (mode) => {
       if (mode !== 'car' || !held) return;

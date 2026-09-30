@@ -2,7 +2,7 @@
 // What happens inside each step lives in the module it calls (see ARCHITECTURE.md > Frame loop).
 import * as THREE from 'three';
 import { $ } from './engine/util.js';
-import { scene, composer, world, U, dynamics, adaptResolution } from './engine/core.js';
+import { scene, composer, world, U, dynamics, adaptResolution, snowCover } from './engine/core.js';
 import { emit } from './engine/events.js';
 import { registerFeatures, buildFeatures, updateFeatures } from './engine/features.js';
 import { batchStatic, mergeByMaterial, meshChildren } from './engine/batch.js';
@@ -19,8 +19,10 @@ import { applySeason, updateSeasonFx } from './world/seasons.js';
 import { updateFootprints } from './world/footprints.js';
 import { car, updateDriving, syncCar, updateCarEffects } from './entities/car/car.js';
 import { avatar, player, updatePlayer, syncPlayer, camActor, carKeys, carPrompt, zoneOrigin, cheer, initPlayerPhysics } from './entities/player/controller.js';
-import { ui, modalOpen, windEnabled, setPrompt, showHint, updateClockUI, countFrame, setProgress, restoreQuality, setManualHour, setQuality } from './ui/ui.js';
+import { ui, modalOpen, setPrompt, showHint, updateClockUI, countFrame, setProgress } from './ui/ui.js';
+import { initSettings, restoreQuality, setManualHour, setQuality, windEnabled } from './ui/settings.js';
 import { initInventoryUI } from './ui/inventory.js';
+import { initHotbarUI } from './ui/hotbar.js';
 import { initSurvivalUI, updateSurvivalUI } from './ui/survival.js';
 import { initCalendarUI, updateDateUI } from './ui/calendar.js';
 import { initMapUI, updateMap, mapFrozen, mapAfterRender } from './ui/map.js';
@@ -30,9 +32,11 @@ import features from './features/index.js';
 
 registerFeatures(features);
 initInventoryUI();
+initHotbarUI();
 initSurvivalUI();
 initCalendarUI();
 initMapUI();
+initSettings();
 
 // ---------------------------------------------------------------- build
 async function build() {
@@ -42,6 +46,7 @@ async function build() {
   let merged = batchStatic(scene, [car, avatar, ...dynamics.map(d => d.mesh), ...zones.map(z => z.dia).filter(Boolean)]);
   for (const d of dynamics) if (!d.mesh.isMesh) merged += mergeByMaterial(d.mesh, meshChildren(d.mesh));
   console.log(`batching: ${merged} meshes merged away`);
+  snowCover(scene, [car, avatar]);   // winter: snow on top of every static prop (engine/core.js, driven by world/seasons.js)
   setProgress(1, 'Siap!');
 }
 
@@ -96,7 +101,7 @@ export function tick() {
 const params = new URLSearchParams(location.search);
 function startGame({ fresh }) {
   // debug via URL: ?jam=17.5 fixes the hour of a new game
-  if (fresh && params.has('jam')) { setManualHour(parseFloat(params.get('jam')) % 24); $('speedSel').value = '0'; time.speed = 0; }
+  if (fresh && params.has('jam')) { setManualHour(parseFloat(params.get('jam')) % 24); time.speed = 0; }
   ui.started = true;
   showHint(player.mode === 'car', 12000);
   if (fresh) cheer();
@@ -106,7 +111,7 @@ function startGame({ fresh }) {
 build().then(() => {
   restoreQuality();
   // debug via URL: ?kualitas=mid
-  if (params.has('kualitas')) { $('qualitySel').value = params.get('kualitas'); setQuality(params.get('kualitas')); }
+  if (params.has('kualitas')) setQuality(params.get('kualitas'));
   snapCamera();
   window.__tester = { tick, camTarget, player };   // handle for automated screenshot tests
   emit('world:ready');

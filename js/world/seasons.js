@@ -11,7 +11,8 @@ import { CAL, today } from '../systems/calendar.js';
 import { setEnv } from '../systems/stats.js';
 import { groundLeaves } from './vegetation.js';
 import { smoke } from './effects.js';
-import { groundY } from './worldmap.js';
+import { groundY, maskAt, keepOut, landDist } from './worldmap.js';
+import { trees } from './vegetation.js';
 
 const KEYS = ['grassA', 'grassB', 'leaf', 'ground', 'paved'];
 const REF = Object.fromEntries(KEYS.map(k => [k, new THREE.Color(CAL.seasons[0].look[k])]));
@@ -19,7 +20,7 @@ const LOOK = CAL.seasons.map(s => Object.fromEntries(KEYS.map(k => [k, new THREE
 const lum = (c) => c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722;
 const ENV_NAMES = [...new Set([...CAL.seasons.flatMap(s => [...(s.env || []), ...(s.envNight || []), ...(s.envNoon || [])]), ...Object.values(CAL.weathers).flatMap(w => w.env || [])])];
 
-const cur = { tint: Object.fromEntries(KEYS.map(k => [k, REF[k].clone()])), leafMix: 0, leafMixColor: new THREE.Color(1, 1, 1), grassH: 1, leafScale: 1, dim: 1, amb: 0, rain: 0, snow: 0, season: -1, seasonKey: -1 };
+const cur = { dead: 0, cover: 0, mounds: -1, tint: Object.fromEntries(KEYS.map(k => [k, REF[k].clone()])), leafMix: 0, leafMixColor: new THREE.Color(1, 1, 1), grassH: 1, leafScale: 1, dim: 1, amb: 0, rain: 0, snow: 0, season: -1, seasonKey: -1 };
 let first = true;
 const grey = new THREE.Color(), tmpA = new THREE.Color(), tmpB = new THREE.Color();
 const ease = (dt, rate) => (first ? 1 : 1 - Math.exp(-dt * rate));
@@ -89,6 +90,41 @@ function move(f, count, dt, focus, fall, sway, t, streak = 0) {
   f.obj.geometry.attributes.position.needsUpdate = true;
 }
 
+// ---------------------------------------------------------------- snow mounds (one InstancedMesh, built on the first winter)
+let mounds = null, moundData = null;
+function buildMounds() {
+  let seed = 1234567;
+  const r = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  moundData = [];
+  // a drift at the foot of most trees, the rest scattered over open land (not on roads, water or farm fields)
+  for (const t of trees) if (r() < 0.8) moundData.push([t.x + (r() - 0.5) * 1.2, t.z + (r() - 0.5) * 1.2, 0.9 + r() * 0.7, 0.35 + r() * 0.2, t.id]);
+  for (let i = 0; i < 2000 && moundData.length < 260; i++) {
+    const x = (r() - 0.5) * 180, z = (r() - 0.5) * 180, m = maskAt(x, z);
+    if (landDist(x, z) < 2 || m.paved > 0.1 || m.asphalt > 0.05) continue;
+    if (keepOut.some(k => Math.hypot(x - k.x, z - k.z) < k.r + 0.5)) continue;
+    moundData.push([x, z, 0.5 + r() * 1.3, 0.18 + r() * 0.3, -1]);
+  }
+  const geo = new THREE.IcosahedronGeometry(1, 1);
+  mounds = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: '#f4f7ff', flatShading: true }), moundData.length);
+  mounds.receiveShadow = true; mounds.castShadow = false;
+  scene.add(mounds);
+}
+const mm = new THREE.Matrix4(), mq = new THREE.Quaternion(), mp = new THREE.Vector3(), ms = new THREE.Vector3(), my = new THREE.Vector3(0, 1, 0);
+function updateMounds(k) {
+  const q = Math.round(k * 50) / 50;   // only rewrite the matrices when the amount really changed
+  if (q === cur.mounds) return;
+  cur.mounds = q;
+  if (q <= 0) { if (mounds) mounds.visible = false; return; }
+  if (!mounds) buildMounds();
+  mounds.visible = true;
+  moundData.forEach(([x, z, w, h, tree], i) => {
+    const down = tree >= 0 && trees[tree].down;   // no drift where a tree was cut down
+    mounds.setMatrixAt(i, mm.compose(mp.set(x, groundY(x, z) - h * 0.25, z), mq.setFromAxisAngle(my, i * 1.7), ms.set(w * q, down ? 0 : h * q, w * 0.8 * q)));
+  });
+  mounds.instanceMatrix.needsUpdate = true;
+  mounds.computeBoundingSphere();
+}
+
 // ---------------------------------------------------------------- per frame
 let t = 0;
 export function updateSeasonFx(dt, hour, focus) {
@@ -117,6 +153,11 @@ export function updateSeasonFx(dt, hour, focus) {
     smoke.spawn(sp.set(x, Math.max(groundY(x, z), -0.3) + 0.04, z), sv.set(0, frand(0.6, 1.2), 0), frand(0.04, 0.07), 0.3, splashC, -2);
   }
   sfx.rain(cur.rain);
+  // winter: dead grass patches, snow on props (engine/core.js snowCover) and snow mounds on the ground
+  cur.dead += ((s.look.deadGrass || 0) - cur.dead) * k; U.uDead.value = cur.dead;
+  const cover = Math.min(1, (s.look.snow || 0) + (s.look.snow ? cur.snow * 0.1 : 0));
+  cur.cover += (cover - cur.cover) * (first ? 1 : 1 - Math.exp(-dt * 0.35)); U.uSnow.value = cur.cover;
+  updateMounds(cur.cover);
   first = false;
 
   // environment flags for the survival conditions (Kedinginan, Kepanasan, Basah kuyup…)

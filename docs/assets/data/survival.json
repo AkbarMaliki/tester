@@ -93,6 +93,7 @@
       "duration": 300, "mods": { "hunger": -0.5, "healthRegen": 0.5 } },
     "hangat": { "kind": "buff", "icon": "☕", "name": "Hangat", "desc": "Minuman hangat: kebal Kedinginan & Membeku untuk sementara.",
       "duration": 300, "mods": { "staminaRegen": 0.1 } },
+    "berkuda": { "kind": "buff", "icon": "🐎", "name": "Menunggang kuda", "desc": "Duduk di atas kuda: jalan dan lari jauh lebih cepat.", "duration": 3, "mods": { "speed": 1.1 } },
     "lega": { "kind": "buff", "icon": "😌", "name": "Lega", "desc": "Plong! Jalan sedikit lebih cepat.",
       "duration": 60, "mods": { "speed": 0.06 } }
   }

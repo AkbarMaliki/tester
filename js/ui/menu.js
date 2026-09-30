@@ -7,7 +7,8 @@ import { sfx } from '../engine/audio.js';
 import { clearKeys } from '../systems/input.js';
 import { snapCamera } from '../systems/camera.js';
 import { slotName, listSaves, latestSave, saveGame, loadGame, newGame, cloud, session } from '../systems/save.js';
-import { ui, openModal, toast } from './ui.js';
+import { ui, toast } from './ui.js';
+import { openSettings, settingsOpen } from './settings.js';
 
 let startGame = () => {};   // main.js: switches the game on after a new game / load
 let busy = false;
@@ -97,6 +98,7 @@ export function showMainMenu() {
 function mainMenuAction(what) {
   if (busy) return;
   if (what === 'new') begin(null);
+  else if (what === 'settings') openSettings('grafis');
   else if (what === 'continue') { if ($('mmContinue').dataset.slot) begin($('mmContinue').dataset.slot); }
   else if (what === 'load') {
     sfx.init(); $('mainMenu').classList.add('panel');
@@ -118,6 +120,7 @@ function pauseMain() {
     <button class="amatic" data-p="resume">Lanjutkan</button>
     <button class="amatic" data-p="save">Simpan Game</button>
     <button class="amatic" data-p="load">Muat Game</button>
+    <button class="amatic" data-p="settings">Pengaturan</button>
     <button class="amatic" data-p="controls">Kontrol</button>
     <button class="amatic" data-p="menu">Menu Utama</button>
   </div><p class="save-status">${cloudText()}${session.slot ? ` · terakhir: ${slotName(session.slot)}` : ''}</p>`;
@@ -133,7 +136,8 @@ async function pauseAction(what) {
   if (busy) return;
   const body = $('pauseBody');
   if (what === 'resume') togglePause(false);
-  else if (what === 'controls') { togglePause(false); openModal($('controlsTemplate').innerHTML); }
+  else if (what === 'controls') openSettings('tombol');   // the key list = the real (rebindable) controls
+  else if (what === 'settings') openSettings();
   else if (what === 'save') {
     body.innerHTML = '<h2>Simpan Game</h2><p class="save-status">Memeriksa slot…</p>';
     const list = await listSaves();
@@ -172,9 +176,9 @@ export function initMenu(start) {
   $('pause').onclick = (e) => { if (e.target.id === 'pause' && !busy) togglePause(false); };
   // capture phase: decide before ui.js / the inventory close their own panels on the same Esc
   addEventListener('keydown', (e) => {
-    if (e.code !== 'Escape' || e.repeat || !ui.started || busy) return;
+    if (e.code !== 'Escape' || e.repeat || !ui.started || busy || settingsOpen()) return;   // settings closes first
     if (pauseOpen()) { togglePause(false); return; }
-    const other = ['modal', 'settings', 'inventory', 'profile', 'fade', 'mapView'].some(id => $(id).classList.contains('show'));
+    const other = ['modal', 'inventory', 'profile', 'fade', 'mapView'].some(id => $(id).classList.contains('show'));
     if (!other) togglePause(true);
   }, true);
   // dev server only: leaving the page (= Vite reloading it) writes a local snapshot the reload continues from.

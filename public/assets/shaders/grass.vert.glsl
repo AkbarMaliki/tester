@@ -4,8 +4,12 @@ attribute float aRand;
 varying float vTip;
 varying float vRand;
 uniform float uGrassH;   // season: 1 = normal, < 1 = short / snowed under
+uniform sampler2D uCut;  // mown grass (r: 1 = just cut, fades back to 0 as it regrows)
 //#main
 transformed.y *= uGrassH;
+// mown: down to short stubble
+float mown = texture2D(uCut, (aRoot.xz + WORLD_HALF) / WORLD_SIZE).r;
+transformed.y = aRoot.y + (transformed.y - aRoot.y) * (1. - mown * 0.86);
 float gust = sin(uTime * 1.4 + aRoot.x * .22 + aRoot.z * .15) * .5 + .5;
 float flick = sin(uTime * 3.1 + aRand * 20. + aRoot.x) * .15;
 vec2 wind = uWindDir * (gust * .45 + flick);

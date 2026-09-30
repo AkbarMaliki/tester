@@ -8,6 +8,7 @@ export const PLAYER_SPAWN = { x: 1, z: 9.8, yaw: 0.6 };   // the kid starts next
 export const CAM_OFFSET = [12.5, 17, 16.5];   // isometric-ish follow camera
 // Debug tools while the game is in development: the item chest in the Balai gazebo (features/debug). false = gone.
 export const DEBUG = true;
+export const START_GOLD = 500;                // money of a new game (systems/wallet.js)
 // runtime files in public/assets/, resolved from the page URL so it works in dev, in the build and under a sub-path (GitHub Pages)
 export const ASSETS = new URL('assets/', document.baseURI).href;
 

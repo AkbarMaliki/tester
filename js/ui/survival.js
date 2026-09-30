@@ -4,8 +4,9 @@
 import { $ } from '../engine/util.js';
 import { on } from '../engine/events.js';
 import { sfx } from '../engine/audio.js';
-import { clearKeys } from '../systems/input.js';
+import { clearKeys, is, keyOf } from '../systems/input.js';
 import { RULES, NEEDS, stats, derived, shown, profile } from '../systems/stats.js';
+import { wallet, fmtGold } from '../systems/wallet.js';
 import { ui, toast } from './ui.js';
 import { mountPreview } from './preview.js';
 
@@ -102,12 +103,12 @@ function renderProfile() {
     : '<p class="pf-none">Tidak ada efek. Kondisi normal.</p>';
   $('profileBody').innerHTML = `
     <div class="pf-head"><div><h3 class="amatic">${profile.name}</h3><span>${profile.title}</span></div>
-      <div class="pf-quick"><span>Kecepatan <b>${Math.round(d.speed * 100)}%</b></span><span>Lari <b>${d.noRun ? 'tidak bisa' : 'bisa'}</b></span></div></div>
+      <div class="pf-quick"><span class="pf-gold">💰 Uang <b>${fmtGold(wallet.gold)}</b></span><span>Kecepatan <b>${Math.round(d.speed * 100)}%</b></span><span>Lari <b>${d.noRun ? 'tidak bisa' : 'bisa'}</b></span></div></div>
     <div class="pf-cols">
       <section><h4>Atribut</h4>${attrs}<h4>Kondisi</h4><table class="pf-tab">${meters}</table></section>
       <section><h4>Efek aktif</h4>${fx}
         <h4>Cara bertahan</h4><ul class="pf-tips">
-          <li><b>Lapar</b>: buka tas (<kbd>I</kbd>), pilih makanan, lalu <b>Makan</b>. Jamur &amp; telur mentah bisa bikin sakit.</li>
+          <li><b>Lapar</b>: buka tas (<kbd>${keyOf('bag')}</kbd>), pilih makanan, lalu <b>Makan</b>. Jamur &amp; telur mentah bisa bikin sakit.</li>
           <li><b>Haus</b>: keran air minum di Balai Warga, atau botol air (isi ulang di keran).</li>
           <li><b>Energi</b>: tidur di kasur gazebo Balai. Waktu akan dilewati.</li>
           <li><b>Kandung kemih</b>: toilet umum di Balai. Juga menyembuhkan keracunan &amp; mual.</li>
@@ -123,7 +124,8 @@ export function initSurvivalUI() {
   $('profile').onclick = (e) => { if (e.target.id === 'profile') toggleProfile(false); };
   addEventListener('keydown', (e) => {
     if (e.repeat || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-    if (e.code === 'KeyP') toggleProfile();
+    if (document.body.classList.contains('rebinding')) return;
+    if (is(e.code, 'profile')) toggleProfile();
     else if (e.code === 'Escape') toggleProfile(false);
   });
   // a toast when something important starts or ends (not for the short out-of-breath one)

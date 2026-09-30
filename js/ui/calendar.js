@@ -7,6 +7,7 @@ import { sfx } from '../engine/audio.js';
 import { DEBUG } from '../game/config.js';
 import { CAL, today, dateOf, eventsOn, fmtDate, setDay } from '../systems/calendar.js';
 import { RULES } from '../systems/stats.js';
+import { is } from '../systems/input.js';
 import { ui, openModal, modalOpen, toast } from './ui.js';
 
 const N = CAL.daysPerSeason;
@@ -69,7 +70,7 @@ export function initCalendarUI() {
   $('clockDate').onclick = (e) => { e.stopPropagation(); openCalendar(); };
   addEventListener('keydown', (e) => {
     if (e.repeat || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-    if (e.code === 'KeyK') openCalendar();
+    if (is(e.code, 'calendar') && !document.body.classList.contains('rebinding')) openCalendar();
   });
   // morning news: new day, new season, festivals
   on('calendar:day', (d) => {

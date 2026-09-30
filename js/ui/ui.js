@@ -1,19 +1,17 @@
-// Keyboard/touch input, modal, settings panel, clock HUD, interaction prompt.
+// Keyboard/touch input, modal, clock HUD, interaction prompt, toasts. Settings live in ui/settings.js.
 import { $ } from '../engine/util.js';
-import { renderer, sun, bloom, applyQuality, setTiltShift, getPixelRatio } from '../engine/core.js';
-import { time, dayLabel, nowHour } from '../systems/daynight.js';
-import { grassMeshes } from '../world/vegetation.js';
+import { getPixelRatio } from '../engine/core.js';
+import { dayLabel } from '../systems/daynight.js';
 import { respawn, unflip, isUpsideDown } from '../entities/car/car.js';
 import { player, toggleCar, respawnPlayer } from '../entities/player/controller.js';
 import { sfx } from '../engine/audio.js';
-import { keys, KEYMAP, clearKeys, dispatchKey } from '../systems/input.js';
-import { on } from '../engine/events.js';
-import { CAL, today, forceWeather } from '../systems/calendar.js';
+import { clearKeys, dispatchKey, actionsOf, holdKey, keyOf, keys } from '../systems/input.js';
 
 export const ui = { started: false, activeZone: null };
 // any panel that pauses gameplay input (the info modal, the inventory from ui/inventory.js)
-export const modalOpen = () => ['modal', 'inventory', 'pause', 'profile', 'fade', 'mapView'].some(id => $(id).classList.contains('show'));
-export const windEnabled = () => $('optWind').checked;
+export const modalOpen = () => ['modal', 'inventory', 'pause', 'profile', 'fade', 'mapView', 'settingsMenu'].some(id => $(id).classList.contains('show'));
+// Pengaturan > Tombol is waiting for a key: no other listener may react to it
+export const rebinding = () => document.body.classList.contains('rebinding');
 
 // ---------------------------------------------------------------- modal + zones
 // onClick (optional) receives clicks inside the panel, e.g. for buttons in `html`
@@ -34,20 +32,21 @@ function openZone(z) { if (z.action) { z.action(); if (!z.quiet) sfx.pop(); } if
 // R / respawn button: flips or resets the car while driving, puts the kid back at the start on foot
 function doRespawn() { if (player.mode === 'car') { if (isUpsideDown()) unflip(); else respawn(); } else respawnPlayer(); }
 
-// hint line under the screen, swapped between on-foot and driving controls
+// hint line under the screen, swapped between on-foot and driving controls (built from the current key bindings)
+const k = (a) => `<kbd>${keyOf(a)}</kbd>`;
 const HINTS = {
-  foot: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = jalan · <kbd>Shift</kbd> lari · <kbd>Space</kbd> lompat · <kbd>F</kbd> masuk mobil · <kbd>E</kbd> ambil · <kbd>I</kbd> tas · <kbd>P</kbd> profil · <kbd>K</kbd> kalender · <kbd>M</kbd> peta · <kbd>R</kbd> reset<br>Drag mouse = putar kamera · Scroll = zoom · <kbd>C</kbd> reset kamera',
-  car: '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / panah = setir · <kbd>Shift</kbd> boost · <kbd>Space</kbd> rem · <kbd>H</kbd> klakson · <kbd>F</kbd> keluar mobil · <kbd>R</kbd> reset',
+  foot: () => `${k('fwd')}${k('left')}${k('back')}${k('right')} = jalan · ${k('boost')} lari · ${k('brake')} lompat · ${k('car')} masuk mobil · ${k('interact')} ambil · ${k('tool')} pakai shortcut · ${k('bag')} tas · ${k('profile')} profil · ${k('calendar')} kalender · ${k('map')} peta · ${k('settings')} pengaturan<br>Drag mouse = putar kamera · Scroll = zoom · ${k('camReset')} reset kamera`,
+  car: () => `${k('fwd')}${k('left')}${k('back')}${k('right')} = setir · ${k('boost')} boost · ${k('brake')} rem · ${k('horn')} klakson · ${k('car')} keluar mobil · ${k('respawn')} reset`,
 };
 let hintTimer = 0;
 export function showHint(driving, ms = 8000) {
-  $('hint').innerHTML = HINTS[driving ? 'car' : 'foot']; $('hint').style.opacity = 0.85;
+  $('hint').innerHTML = HINTS[driving ? 'car' : 'foot'](); $('hint').style.opacity = 0.85;
   clearTimeout(hintTimer); hintTimer = setTimeout(() => { $('hint').style.opacity = 0; }, ms);
 }
 export function setPrompt(zone) {
   if (zone === ui.activeZone) return;
   ui.activeZone = zone;
-  $('prompt').innerHTML = zone ? `<kbd>E</kbd> ${zone.label}` : '';
+  $('prompt').innerHTML = zone ? `<kbd>${keyOf('interact')}</kbd> ${zone.label}` : '';
   $('prompt').classList.toggle('show', !!zone);
 }
 
@@ -56,24 +55,23 @@ export function setPrompt(zone) {
 // (E/Enter) or jumping would also fire the last button pressed (reset camera, respawn…). Buttons drop focus after a
 // click, and while playing, gameplay keys never reach a focused button.
 document.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) b.blur(); });
-const GAME_KEYS = new Set(['KeyE', 'Enter', 'NumpadEnter', 'Space', ...Object.keys(KEYMAP)]);
 addEventListener('keydown', (e) => {
-  if (ui.started && !modalOpen() && GAME_KEYS.has(e.code) && document.activeElement?.tagName === 'BUTTON') { e.preventDefault(); document.activeElement.blur(); }
+  if (rebinding()) return;
+  const acts = actionsOf(e.code);
+  if (ui.started && !modalOpen() && acts.length && document.activeElement?.tagName === 'BUTTON') { e.preventDefault(); document.activeElement.blur(); }
   if ((e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') && e.code !== 'Escape') return;
-  if (KEYMAP[e.code]) { keys[KEYMAP[e.code]] = 1; e.preventDefault(); }
+  if (holdKey(e.code, true)) e.preventDefault();
   if (e.repeat) return;
-  if (e.code === 'Escape') { closeModal(); $('settings').classList.remove('show'); }
-  if (e.code === 'KeyT') $('settings').classList.toggle('show');
-  if (e.code === 'BracketLeft' || e.code === 'BracketRight') setManualHour((time.hour + (e.code === 'BracketLeft' ? -1 : 1) + 24) % 24);
+  if (e.code === 'Escape') closeModal();
   if (!ui.started || modalOpen()) return;
-  if (e.code === 'KeyR') doRespawn();
-  if (e.code === 'KeyH' && player.mode === 'car') sfx.horn();
-  if (e.code === 'KeyF') toggleCar();
-  if (e.code === 'KeyN') toggleMute();
-  if (e.code === 'KeyE' || e.code === 'Enter') { if (ui.activeZone) openZone(ui.activeZone); else if (player.mode === 'car') toggleCar(); }
-  dispatchKey(e.code);   // bindings registered by features via systems/input.js onKey()
+  if (acts.includes('respawn')) doRespawn();
+  if (acts.includes('horn') && player.mode === 'car') sfx.horn();
+  if (acts.includes('car')) toggleCar();
+  if (acts.includes('mute')) toggleMute();
+  if (acts.includes('interact')) { if (ui.activeZone) openZone(ui.activeZone); else if (player.mode === 'car') toggleCar(); }
+  dispatchKey(e.code);   // one-shot bindings registered by features via systems/input.js onAction() / onKey()
 });
-addEventListener('keyup', (e) => { if (KEYMAP[e.code]) keys[KEYMAP[e.code]] = 0; });
+addEventListener('keyup', (e) => { holdKey(e.code, false); });
 addEventListener('blur', clearKeys);
 document.querySelectorAll('#touch button').forEach(b => {
   const k = b.dataset.k, on = (v) => (e) => { e.preventDefault(); keys[k] = v; b.classList.toggle('on', !!v); };
@@ -96,58 +94,11 @@ export function toast(html, icon) {
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 1800);
 }
 $('carBtn').onclick = () => { if (ui.started && !modalOpen()) toggleCar(); };
-function toggleMute() {
-  const m = sfx.toggle();
-  $('muteIcon').innerHTML = m ? '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6"/>' : '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>';
+export function toggleMute() { sfx.toggle(); refreshMuteIcon(); }
+export function refreshMuteIcon() {
+  $('muteIcon').innerHTML = sfx.muted ? '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6"/>' : '<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>';
 }
 $('muteBtn').onclick = toggleMute;
-
-// ---------------------------------------------------------------- time + settings panel
-$('clock').onclick = () => $('settings').classList.toggle('show');
-export function setManualHour(h) {
-  time.real = false; time.hour = h;
-  $('realTime').checked = false; $('speedSel').disabled = false;
-}
-$('realTime').onchange = (e) => { time.real = e.target.checked; $('speedSel').disabled = time.real; };
-$('hourSlider').oninput = (e) => setManualHour(parseFloat(e.target.value));
-$('speedSel').onchange = (e) => { time.speed = parseFloat(e.target.value); };
-$('speedSel').disabled = true;
-// a loaded save / new game / sleeping changed the clock: mirror it in the panel
-const mirrorClock = () => {
-  $('realTime').checked = time.real; $('speedSel').disabled = time.real;
-  if ([...$('speedSel').options].some(o => +o.value === time.speed)) $('speedSel').value = String(time.speed);
-};
-on('save:applied', mirrorClock);
-on('time:skipped', mirrorClock);
-document.querySelectorAll('#settings .presets button[data-h]').forEach(b => { b.onclick = () => setManualHour(parseFloat(b.dataset.h)); });
-// weather for today (systems/calendar.js forceWeather): one button per weather + back to the forecast
-$('weatherBtns').innerHTML = Object.entries(CAL.weathers).map(([k, w]) => `<button data-w="${k}">${w.icon} ${w.name}</button>`).join('') + '<button data-w="">🔄 Otomatis</button>';
-const markWeather = () => { const id = today().weather.id; for (const b of $('weatherBtns').children) b.classList.toggle('on', b.dataset.w === id); };
-$('weatherBtns').onclick = (e) => { const b = e.target.closest('button[data-w]'); if (b) { forceWeather(b.dataset.w || null); markWeather(); } };
-on('calendar:day', markWeather);
-
-export function setQuality(q, remember = true) {
-  applyQuality(q);
-  for (const m of grassMeshes) m.visible = q === 'high' || m.userData.layer === 0;
-  if (remember) try { localStorage.setItem('tester.quality', q); } catch { /* storage unavailable */ }
-}
-$('qualitySel').onchange = (e) => setQuality(e.target.value);
-function isIntegratedGpu() {
-  try {
-    const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info');
-    return /intel|iris|uhd|mali|adreno|powervr|apple|swiftshader/i.test(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : '');
-  } catch { return false; }
-}
-export function restoreQuality() {
-  let q = null;
-  try { q = localStorage.getItem('tester.quality'); } catch { /* storage unavailable */ }
-  if (!q) q = isIntegratedGpu() ? 'auto' : 'high';   // first visit: pick a sensible default
-  $('qualitySel').value = q; setQuality(q, false);
-}
-$('optShadow').onchange = (e) => { sun.castShadow = e.target.checked; };
-$('optBloom').onchange = (e) => { bloom.enabled = e.target.checked; };
-$('optTilt').onchange = (e) => setTiltShift(e.target.checked);
-$('optFps').onchange = (e) => { $('fps').style.display = e.target.checked ? 'block' : 'none'; };
 
 // ---------------------------------------------------------------- clock HUD
 const fmt = (h) => { const m = Math.floor(h * 60) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
@@ -163,9 +114,6 @@ export function updateClockUI(h) {
   const txt = fmt(h);
   if (txt !== lastClockText) {
     lastClockText = txt; $('clockTime').textContent = txt; $('clockLabel').textContent = dayLabel(h);
-    markWeather();
-    $('hourVal').textContent = txt; $('realNow').textContent = fmt(nowHour());
-    if (document.activeElement !== $('hourSlider')) $('hourSlider').value = h;
   }
 }
 

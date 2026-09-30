@@ -6,10 +6,15 @@ import { clamp, lerp, smooth, vnoise, fbm, sdSeg, sdBox } from '../engine/util.j
 export const LAKES = [{ x: -40, z: -20, r: 14 }, { x: 18, z: 47, r: 12 }, { x: 51, z: -35, r: 9 }, { x: -61, z: 12, r: 6 }];
 // Balai Warga: the village rest area (drinking fountain, public toilet, gazebo with a bed; built by features/survival)
 export const BALAI = { x: 24, z: -25, r: 9.5 };
+// Kebun (farm, built by features/farming; field/greenhouse layout in public/assets/data/farming.json): the road ends at its gate
+export const FARM = { x: -21, z: 42 };
+// Peternakan (ranch, built by features/ranch; layout in public/assets/data/ranch.json): east of the kiosk plaza
+export const RANCH = { x: 52, z: 18 };
 export const PLAZAS = [[0, 0, 12.5], [40, 4, 9], [-26, 28, 11], [46, -23, 5], [-50, 16, 5], [BALAI.x, BALAI.z, BALAI.r]];
-export const ROADS = [[0, 0, 36, 4], [0, 0, -24, 26], [0, 0, 0, -48], [0, 0, 8, 31], [36, 4, 46, -22], [-24, 26, -50, 16], [0, -25, BALAI.x, BALAI.z]];
+export const ROADS = [[0, 0, 36, 4], [0, 0, -24, 26], [0, 0, 0, -48], [0, 0, 8, 31], [36, 4, 46, -22], [-24, 26, -50, 16], [0, -25, BALAI.x, BALAI.z], [-26, 30, FARM.x, FARM.z - 0.5], [40, 12, RANCH.x, RANCH.z]];
 export const LOT = { x: 0, z: -55, hx: 26, hz: 7 };
 export const keepOut = [];   // {x,z,r} areas without grass/trees (filled by props before baking)
+export const noTrees = [];   // {x0,x1,z0,z1} areas that keep their grass but get no trees (a pasture…)
 
 export function landDist(x, z) {   // > 0 land, < 0 water
   let d = 86 + 18 * (fbm(x * 0.02 + 3, z * 0.02 + 7) - 0.5) - Math.hypot(x, z);

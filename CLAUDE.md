@@ -14,15 +14,17 @@ Browser 3D game: three.js 0.169 + cannon-es 0.20 (npm, pinned), plain ES modules
 |---|---|
 | add a gameplay feature (fishing, farming, shop, quest, minigame…) | new folder `js/features/<name>/` + one line in `js/features/index.js` (checklist: `js/features/README.md`) |
 | change how the kid **looks** (clothes, hair, face, colours) | `js/entities/player/model.js` |
-| change how the kid **moves/animates**, enters the car | `js/entities/player/controller.js` |
+| change how the kid **moves/animates**, enters the car | `js/entities/player/controller.js` (arm/leg IK helpers: `ik.js`) |
+| how the kid holds / swings farming tools, pulls weeds, sows, waters | `js/features/farming/anim.js` (keyframes in avatar space + IK) |
 | facial expressions (sick, hungry, sleepy…) · character preview in the bag/profile panels | `js/entities/player/face.js` (+ face parts in `model.js`) · `js/ui/preview.js` |
 | car handling, model, lights, exhaust | `js/entities/car/car.js` |
 | move/add park furniture, change build order / loading texts | `js/world/layout.js` (placement) + `js/world/props.js` (prop builders) |
 | lakes, roads, plazas, where grass may grow | `js/world/worldmap.js` |
 | ground / water mesh | `js/world/terrain.js` (+ `public/assets/shaders/ground|water.*.glsl`) |
 | grass, trees, rocks, leaves | `js/world/vegetation.js` (+ `public/assets/shaders/grass|leaves.*.glsl`) |
+| felling wild trees with the golden axe (hits, fall animation, stump, regrow, wood) | `js/features/farming/woodcut.js` + `wildTrees` in `public/assets/data/farming.json` |
 | day/night colours | `public/assets/data/palettes.json` (data), `js/systems/daynight.js` (clock), `js/world/sky.js` (applies it) |
-| seasons, calendar, festivals, weather (rain/snow), how each season looks | `public/assets/data/calendar.json` (data) · `js/systems/calendar.js` (dates) · `js/world/seasons.js` (look, particles, env flags) · `js/ui/calendar.js` (panel K + date top-left) |
+| seasons, calendar, festivals, weather (rain/snow), how each season looks (dead grass, snow on roofs, snow mounds: `look.deadGrass` / `look.snow`) | `public/assets/data/calendar.json` (data) · `js/systems/calendar.js` (dates) · `js/world/seasons.js` (look, particles, env flags) · `js/ui/calendar.js` (panel K + date top-left) |
 | footprints | `js/world/footprints.js` (darkness/lifetime per season in calendar.json) |
 | map view (M), map icons · hide something on the map | `js/ui/map.js` · `addMapMarker()` from `js/systems/mapmarkers.js` · `obj.layers.set(DETAIL_LAYER)` (engine/core.js) |
 | notice board texts / positions | `public/assets/data/zones.json` |
@@ -31,10 +33,15 @@ Browser 3D game: three.js 0.169 + cannon-es 0.20 (npm, pinned), plain ES modules
 | survival: hunger/thirst/energy/bladder, health & stamina, buffs/debuffs, character profile (design: `SURVIVAL.md`) | numbers: `public/assets/data/survival.json` · rules: `js/systems/stats.js` · HUD + profile panel (P): `js/ui/survival.js` |
 | what food does (eat/drink values, poison chance) | `public/assets/data/items.json` → `"use"` |
 | Balai Warga (fountain, toilet, gazebo bed), eating, sleeping, fainting | `js/features/survival/` (models in `models.js`) |
+| farming: crops, growth stages, tools, quality ⭐, giant/rare/mutation, greenhouse, sprinklers, shop & shipping bin | numbers + crop list: `public/assets/data/farming.json` · rules/overnight: `js/features/farming/field.js` · 3D models of every growth stage: `models.js` · items: `items.js` · Toko Tani / Kotak Kirim: `shop.js` · tool bar, cursor, swing: `index.js` |
+| shortcut bar (hotbar 1-9, G use) · put items on it | data: `js/systems/hotbar.js` · bar: `js/ui/hotbar.js` · shortcut row in the bag: `js/ui/inventory.js` |
+| animal farming: animals (models, behaviour, animation), barn / coop / silo, feeding, affection, products, breeding, horse riding, pets | `public/assets/data/ranch.json` (species, prices, levels, rules) · `js/features/ranch/` (`models.js` rigs + buildings, `animals.js` behaviour + animation, `anim.js` the kid's poses, `shop.js` Toko Ternak + Buku Ternak, `index.js` daily cycle + interactions + riding) |
+| money (gold) | `js/systems/wallet.js` (`addGold`, `spendGold`), shown under the date (top-left, `#clockGold`) by `js/ui/inventory.js` + in the profile panel (`js/ui/survival.js`) |
 | debug chest (all items + test buttons) · switch debug tools off | `js/features/debug/` · `DEBUG` in `js/game/config.js` |
 | save / load, slots, autosave, Firebase cloud · main menu & pause menu | `js/systems/save.js` (+ `js/engine/firebase.js`, config in `.env.local`) · `js/ui/menu.js` |
 | "press E here" spots | `js/systems/interaction.js` → `addZone()` |
-| keys / controls | `js/systems/input.js` (`keys`, `onKey()`), DOM listeners + HUD in `js/ui/ui.js`, markup in `index.html`, style in `css/style.css` |
+| keys / controls (rebindable actions) | `js/systems/input.js` (`ACTIONS`, `is()`, `onAction()`, `keyOf()` for hints), DOM listeners + HUD in `js/ui/ui.js`, markup in `index.html`, style in `css/style.css` |
+| settings menu (graphics, audio, HUD, camera, key mapping, demo tools) | `js/ui/settings.js` |
 | camera follow / orbit / zoom | `js/systems/camera.js` |
 | particles, wind lines, fireflies | `js/world/effects.js` |
 | sounds | `js/engine/audio.js` (`sfx.*`, synthesised with WebAudio) |

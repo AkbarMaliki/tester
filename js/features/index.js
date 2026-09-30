@@ -3,11 +3,15 @@
 import bowling from './bowling/index.js';
 import pickup from './pickup/index.js';
 import survival from './survival/index.js';
+import farming from './farming/index.js';
+import ranch from './ranch/index.js';
 import debug from './debug/index.js';
 
 export default [
   bowling,
   pickup,
   survival,
+  farming,
+  ranch,
   debug,
 ];

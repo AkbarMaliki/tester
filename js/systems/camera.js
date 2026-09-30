@@ -1,9 +1,14 @@
 // Follow camera: tracks an "actor" (whoever is in control) and orbits around it.
-// Drag to rotate, wheel / pinch to zoom, HUD buttons (tap = step, hold = continuous) and keys Z/X, -/=, C.
+// Drag to rotate, wheel / pinch to zoom, HUD buttons (tap = step, hold = continuous) and the camLeft/camRight/zoomIn/
+// zoomOut/camReset actions (systems/input.js). Sensitivity / inversion: camOpts (Pengaturan > Kamera).
 import * as THREE from 'three';
 import { clamp } from '../engine/util.js';
 import { CAM_OFFSET, PLAYER_SPAWN } from '../game/config.js';
 import { renderer, scene, sun, camera } from '../engine/core.js';
+import { actionsOf } from './input.js';
+
+// user preferences (ui/settings.js): drag / wheel sensitivity multipliers and inverted drag axes
+export const camOpts = { rotate: 1, zoom: 1, invertX: false, invertY: false };
 
 const [ox, oy, oz] = CAM_OFFSET;
 const BASE_DIST = Math.hypot(ox, oy, oz);
@@ -77,10 +82,11 @@ el.addEventListener('pointermove', (e) => {
   const p = pointers.get(e.pointerId);
   if (!p) return;
   if (pointers.size === 1) {
-    setGoal(goal.yaw - (e.clientX - p.x) * 0.006, goal.pitch + (e.clientY - p.y) * 0.004, goal.zoom);
+    const sx = camOpts.rotate * (camOpts.invertX ? -1 : 1), sy = camOpts.rotate * (camOpts.invertY ? -1 : 1);
+    setGoal(goal.yaw - (e.clientX - p.x) * 0.006 * sx, goal.pitch + (e.clientY - p.y) * 0.004 * sy, goal.zoom);
   }
   p.x = e.clientX; p.y = e.clientY;
-  if (pointers.size === 2) { const d = pinchDist(); if (pinch > 0 && d > 0) zoomBy(pinch / d); pinch = d; }
+  if (pointers.size === 2) { const d = pinchDist(); if (pinch > 0 && d > 0) zoomBy(Math.pow(pinch / d, camOpts.zoom)); pinch = d; }
 });
 const release = (e) => {
   pointers.delete(e.pointerId);
@@ -91,7 +97,7 @@ el.addEventListener('pointerup', release);
 el.addEventListener('pointercancel', release);
 el.addEventListener('contextmenu', (e) => e.preventDefault());
 el.addEventListener('dblclick', resetView);
-el.addEventListener('wheel', (e) => { e.preventDefault(); zoomBy(Math.exp(clamp(e.deltaY, -200, 200) * 0.0012)); }, { passive: false });
+el.addEventListener('wheel', (e) => { e.preventDefault(); zoomBy(Math.exp(clamp(e.deltaY, -200, 200) * 0.0012 * camOpts.zoom)); }, { passive: false });
 
 // ---------------------------------------------------------------- HUD buttons
 document.querySelectorAll('#camPad button').forEach((b) => {
@@ -114,13 +120,15 @@ document.querySelectorAll('#camPad button').forEach((b) => {
 });
 
 // ---------------------------------------------------------------- keyboard
-const KEYS = { KeyZ: 'left', KeyX: 'right', Equal: 'in', NumpadAdd: 'in', Minus: 'out', NumpadSubtract: 'out' };
+const HOLD = { camLeft: 'left', camRight: 'right', zoomIn: 'in', zoomOut: 'out' };
 addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-  if (KEYS[e.code]) { held.add(KEYS[e.code]); e.preventDefault(); }
-  if (e.code === 'KeyC' && !e.repeat) resetView();
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || document.body.classList.contains('rebinding')) return;
+  for (const a of actionsOf(e.code)) {
+    if (HOLD[a]) { held.add(HOLD[a]); e.preventDefault(); }
+    if (a === 'camReset' && !e.repeat) resetView();
+  }
 });
-addEventListener('keyup', (e) => { if (KEYS[e.code]) held.delete(KEYS[e.code]); });
+addEventListener('keyup', (e) => { for (const a of actionsOf(e.code)) if (HOLD[a]) held.delete(HOLD[a]); });
 addEventListener('blur', () => held.clear());
 
 // ---------------------------------------------------------------- follow

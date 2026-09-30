@@ -1,11 +1,11 @@
 // Debug chest panel (game/config.js DEBUG): lists every item the game defines, with what eating/using it does,
 // and hands out as many as you want. Plus quick buttons to put the character in a bad state (hungry, poisoned…)
-// so every counter item / facility can be tested. The chest itself stands in the Balai gazebo (features/survival),
-// which opens this panel through the 'debug:chest' event.
-import { on } from '../../engine/events.js';
+// so every counter item / facility can be tested. Opened from Pengaturan > Demo (ui/settings.js) via 'debug:chest'.
+import { on, emit } from '../../engine/events.js';
 import { sfx } from '../../engine/audio.js';
 import { DEBUG } from '../../game/config.js';
 import { allItems, itemDef, addItem, countOf, roomFor } from '../../systems/inventory.js';
+import { addGold } from '../../systems/wallet.js';
 import { RULES, NEEDS, stats, derived, shown, addEffect, removeEffect, setMeter } from '../../systems/stats.js';
 import { openModal, modalOpen, toast } from '../../ui/ui.js';
 import { time } from '../../systems/daynight.js';
@@ -32,7 +32,7 @@ function useTags(use) {
 }
 const img = (d) => (d.icon ? `<img src="${d.icon}" alt="">` : `<i class="dot" style="background:${d.color || '#ccc'}"></i>`);
 
-const TIME = [['d1', '+1 hari'], ['d7', '+7 hari'], ['season', 'Musim berikutnya'], ...Object.entries(CAL.weathers).map(([k, w]) => ['w:' + k, `${w.icon} ${w.name}`]), ['w:', 'Cuaca otomatis']];
+const TIME = [['gold', '+5000 G'], ['grow', 'Tumbuhkan tanaman'], ['d1', '+1 hari'], ['d7', '+7 hari'], ['season', 'Musim berikutnya'], ...Object.entries(CAL.weathers).map(([k, w]) => ['w:' + k, `${w.icon} ${w.name}`]), ['w:', 'Cuaca otomatis']];
 const TABS = [['all', 'Semua'], ['use', 'Makanan & obat'], ['other', 'Bahan & lainnya']];
 const STATES = [
   ['heal', 'Pulihkan semua'], ['hunger', 'Lapar 10%'], ['thirst', 'Haus 10%'], ['energy', 'Ngantuk 10%'], ['bladder', 'Kebelet 10%'],
@@ -40,7 +40,7 @@ const STATES = [
 ];
 
 function html() {
-  const items = allItems().filter(d => tab === 'all' || (tab === 'use') === !!d.use);
+  const items = allItems().filter(d => !d.variant && (tab === 'all' || (tab === 'use') === !!d.use));
   const d = sel && itemDef(sel);
   const detail = d
     ? `<div class="dc-big">${img(d)}</div><h3 class="amatic">${d.name}</h3><p>${d.desc || ''}</p><div class="dc-tags">${useTags(d.use)}</div>
@@ -50,13 +50,13 @@ function html() {
   const fx = shown.map(s => `<span class="dc-tag ${s.def.kind}">${s.def.icon || ''} ${s.def.name}</span>`).join('') || '<span class="dc-tag none">normal</span>';
   return `<div class="debug-chest">
     <h2>Peti Debug</h2>
-    <p class="dc-sub">Semua barang yang ada di game (${allItems().length}). Ambil sebanyak apa pun untuk dicoba. Muncul karena <code>DEBUG = true</code> di game/config.js.</p>
+    <p class="dc-sub">Semua barang yang ada di game (${allItems().filter(d => !d.variant).length}, tanpa varian kualitas). Ambil sebanyak apa pun untuk dicoba. Muncul karena <code>DEBUG = true</code> di game/config.js.</p>
     <div class="dc-tabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${k === tab ? 'on' : ''}">${t}</button>`).join('')}</div>
     <div class="dc-body">
       <div class="dc-grid">${items.map(i => `<button class="dc-item${i.id === sel ? ' on' : ''}" data-id="${i.id}" title="${i.name}">${img(i)}<span>${i.name}</span>${countOf(i.id) ? `<b>${countOf(i.id)}</b>` : ''}</button>`).join('')}</div>
       <div class="dc-detail">${detail}</div>
     </div>
-    <h4>Waktu &amp; cuaca</h4>
+    <h4>Uang, kebun, waktu &amp; cuaca</h4>
     <div class="dc-states">${TIME.map(([k, t]) => `<button data-time="${k}">${t}</button>`).join('')}</div>
     <p class="dc-now">Tanggal: <b>${fmtDate(today())}</b> · cuaca ${today().weather.icon} ${today().weather.name}</p>
     <h4>Uji kondisi</h4>
@@ -84,7 +84,9 @@ function setState(k) {
   sfx.pop();
 }
 function setTime(k) {
-  if (k === 'd1' || k === 'd7') setDay(time.day + (k === 'd1' ? 1 : 7));
+  if (k === 'gold') addGold(5000);
+  else if (k === 'grow') emit('farming:debugGrow');   // features/farming (no import: features talk through events)
+  else if (k === 'd1' || k === 'd7') setDay(time.day + (k === 'd1' ? 1 : 7));
   else if (k === 'season') setDay((Math.floor(time.day / CAL.daysPerSeason) + 1) * CAL.daysPerSeason);
   else forceWeather(k.slice(2) || null);
   sfx.pop();

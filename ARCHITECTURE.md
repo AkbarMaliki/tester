@@ -11,7 +11,7 @@ package.json          three, cannon-es (pinned) + vite; scripts dev/build/previe
 css/style.css         all styles
 public/               copied as-is into the build (.nojekyll + assets/)
 public/assets/
-  data/*.json         tunable data (palettes, notice boards, future feature data)
+  data/*.json         tunable data (palettes, notice boards, items, survival, calendar, farming)
   shaders/*.glsl      all GLSL, loaded by engine/shaders.js
   fonts/              3D letter font
 js/
@@ -34,40 +34,45 @@ SURVIVAL.md           survival design: needs, vitals, effects, profile, Balai Wa
 
 | Module | Exports (what others use) |
 |---|---|
-| `engine/core.js` | `renderer scene camera DETAIL_LAYER composer bloom sun hemi U` (shared shader uniforms), `world` (cannon), `addStatic addDynamic resetDynamic dynamics`, `lam glowMat glowMats mesh group paint shaderMat`, `QUALITY applyQuality setTiltShift adaptResolution getPixelRatio` |
+| `engine/core.js` | `renderer scene camera DETAIL_LAYER composer bloom sun hemi U` (shared shader uniforms), `world` (cannon), `addStatic addDynamic resetDynamic dynamics`, `lam glowMat glowMats mesh group paint shaderMat`, `QUALITY applyQuality setTiltShift adaptResolution getPixelRatio`, winter `snowable(material) snowCover(root, exclude)` (upward faces turn white by `U.uSnow`) |
 | `engine/util.js` | `clamp lerp smooth rnd rand frand pick vnoise fbm sdSeg sdBox canvasTex loadAsset nextFrame $` |
 | `engine/events.js` | `on(name, fn) → off`, `once`, `emit(name, payload) → listenerCount` |
 | `engine/features.js` | `registerFeatures buildFeatures updateFeatures featureIds` |
 | `engine/batch.js` | `batchStatic mergeByMaterial meshChildren bakeRig` (draw-call merging) |
 | `engine/shaders.js` | `SH full sections DEFINES` |
-| `engine/audio.js` | `sfx` (`init engine hit horn step jump door pop pick stash drop eat drink flush toggle`) |
+| `engine/audio.js` | `sfx` (`init engine hit horn step jump door pop pick stash drop eat drink flush dig splash chop coin sparkle timber animal(kind) rain toggle muted setMuted setVolume(master\|sfx\|engine\|ambient, 0..1)`) |
 | `engine/firebase.js` | `createFirebase(cfg) → { enabled, id(), signedIn, get set update remove }` (Realtime Database over REST, anonymous sign-in when allowed) |
-| `engine/thumbs.js` | `thumbnail(obj, size) → png data url`, `disposeThumbnails` (inventory/shop icons from real models) |
+| `engine/thumbs.js` | `thumbnail(obj, size) → png data url`, `starred(url, n, done)` (⭐ overlay for quality variants), `disposeThumbnails` (inventory/shop icons from real models) |
 | `game/config.js` | `WORD W HALF WATER_Y MAX_LAMPS SPAWN PLAYER_SPAWN CAM_OFFSET DEBUG ASSETS FIREBASE SAVE_ROOT RESUME_AFTER_RELOAD` |
 | `systems/save.js` | `registerSave(key, { version, save, load, reset, migrate?, summary? })`, `saveGame loadGame newGame listSaves latestSave deleteSave updateSave`, `SAVE_SLOTS slotName session cloud` |
-| `systems/input.js` | `keys` (held movement state), `KEYMAP`, `clearKeys`, `onKey(code, fn) → unbind`, `dispatchKey` |
+| `systems/input.js` | `ACTIONS` (named actions with rebindable keys, saved on the device), `is(code, action) actionsOf keyOf keyLabel setKeys resetKeys`, `keys` (held movement) `holdKey clearKeys`, `onAction(action, fn)` / `onKey(code, fn)` → unbind, `dispatchKey`. Always check actions, never raw key codes |
 | `systems/mapmarkers.js` | `mapMarkers addMapMarker({ x, z, icon, label, kind })`: places shown on the map view (world/layout, props boards, features add theirs) |
 | `systems/interaction.js` | `zones addZone removeZone updateZones` (zone `range` optional, default 3.2) |
+| `systems/hotbar.js` | `hotbar` (`slots sel`), `HOTBAR selectedItem slotOf assign unassign assignFree select selectNext`: 9 shortcut slots (item ids); items with `hotbarUse: true` are added automatically |
+| `systems/wallet.js` | `wallet` (`gold incoming`), `addGold spendGold canAfford setIncoming incomingTotal fmtGold` (money; start amount `START_GOLD` in game/config.js) |
 | `systems/inventory.js` | `inventory` (`slots held`), `SLOTS defineItem itemDef allItems addItem takeFrom removeItem countOf roomFor moveSlot setHeld` |
-| `systems/camera.js` | `camTarget updateCamera snapCamera orbitOffset resetView setActorScale updateOrbit` |
+| `systems/camera.js` | `camTarget updateCamera snapCamera orbitOffset resetView setActorScale updateOrbit camOpts` (drag/zoom sensitivity, inverted axes) |
 | `systems/daynight.js` | `time` (`hour real speed day`), `advanceTime paletteAt dayLabel nowHour skipTime` (day counter: only running past midnight adds a day) |
 | `systems/calendar.js` | `CAL today dateOf weatherOn eventsOn fmtDate setDay forceWeather updateCalendar`: seasons, dates, festivals, weather per day (data: `public/assets/data/calendar.json`) |
 | `systems/stats.js` | survival stats (rules: `public/assets/data/survival.json`, design: `SURVIVAL.md`): `stats derived shown profile RULES NEEDS METERS`, `updateStats`, movement `canRun speedMul spendStamina runStamina tryJump`, effects `addEffect removeEffect hasEffect cure`, actions `consume setMeter sleep revive` |
-| `world/worldmap.js` | `BALAI LAKES PLAZAS ROADS LOT keepOut landDist groundY heightFromDist bakeMask maskAt` |
+| `world/worldmap.js` | `BALAI FARM RANCH LAKES PLAZAS ROADS LOT keepOut noTrees landDist groundY heightFromDist bakeMask maskAt` |
 | `world/layout.js` | `buildWorld(progress, placeFeatures)`: all prop placement + build order |
 | `world/props.js` | prop builders `board bench lampPost groundLantern crate barrel booth arcade ramp parking dock buildLetters`, `lampLights lampPositions` |
 | `world/terrain.js` | `buildTerrain buildWater WU` |
-| `world/vegetation.js` | `buildGrass plantTrees scatterRocks scatterGroundLeaves grassMeshes canopies groundLeaves` |
+| `world/vegetation.js` | `buildGrass plantTrees scatterRocks scatterGroundLeaves grassMeshes canopies groundLeaves`, wild trees: `trees` (per-tree data; trunks are 2 InstancedMeshes) `treeNear tiltTree fellTree` (hides it, returns a loose copy to animate) `restoreTree hideTree`, mowing: `cutGrass(x, z, r) grassIn isMown` (512² cut map read by the grass shader, regrows in 3 days, save slice `grass`) |
 | `world/effects.js` | `Puffs smoke flames updateWind WINDU flies` |
-| `world/seasons.js` | `applySeason(pal, dt)` (season/weather colours on the palette), `updateSeasonFx(dt, hour, focus)` (grass height, leaves, petals/leaves/rain/snow particles, rain sound, stats env flags) |
+| `world/seasons.js` | `applySeason(pal, dt)` (season/weather colours on the palette), `updateSeasonFx(dt, hour, focus)` (grass height, leaves, petals/leaves/rain/snow particles, rain sound, stats env flags, dead grass patches `U.uDead`, snow on props `U.uSnow`, snow mounds: one InstancedMesh built on the first winter) |
 | `world/footprints.js` | `stampFootprint(x, y, z, yaw, side) updateFootprints(dt)`: fixed pool of 80 fading prints, one draw call |
 | `world/sky.js` | `updateSky(hour, palette, focus) updateAmbient(t)` |
 | `entities/player/model.js` | `avatar J` (rig joints, incl. face parts) `squash HIP_Y FACE_PARTS rigOf(root)` (joints of a clone) |
+| `entities/player/ik.js` | `reachArm(side, target, pole, weight) handPos(side, out) squat(drop, weight)`: two-bone IK for the arms (targets in spine space) and a feet-planted squat, applied after `syncPlayer` (features/farming tool poses) |
 | `entities/player/face.js` | `EXPRESSIONS moodNow faceState updateFace(rig, state, dt, t, mood?)`: facial expressions from the survival state |
 | `entities/player/controller.js` | `player` (`mode: foot/toCar/enter/car/exit`), `body updatePlayer syncPlayer placePlayer respawnPlayer toggleCar camActor zoneOrigin carPrompt carKeys cheer initPlayerPhysics isDriving`, `carry` (hold point over the head) `setCarrying isCarrying` |
 | `entities/car/car.js` | `car chassisBody vehicle drive updateDriving syncCar updateCarEffects placeCar respawn unflip isUpsideDown setDoor` |
-| `ui/ui.js` | `ui` (`started activeZone`), `openModal(html, onClick?) closeModal fadeThrough(text, mid, hold) modalOpen setPrompt showHint toast setProgress updateClockUI countFrame setQuality restoreQuality setManualHour windEnabled` |
-| `ui/inventory.js` | `initInventoryUI toggleInventory`: bag button + panel (I / Tab), drag & drop, toasts on `inventory:added` |
+| `ui/settings.js` | `initSettings openSettings(tab) closeSettings settings set restoreQuality setQuality setManualHour windEnabled`: Pengaturan menu (Grafis, Audio, HUD, Kamera, Tombol, Demo with DEBUG), persisted in localStorage |
+| `ui/ui.js` | `ui` (`started activeZone`), `openModal(html, onClick?) closeModal fadeThrough(text, mid, hold) modalOpen rebinding toggleMute refreshMuteIcon setPrompt showHint toast setProgress updateClockUI countFrame setQuality restoreQuality setManualHour windEnabled` |
+| `ui/inventory.js` | `initInventoryUI toggleInventory`: bag button + panel (I / Tab), drag & drop, shortcut row (drag onto it / "Jadikan shortcut"), money under the clock date (click = open the bag), toasts on `inventory:added` |
+| `ui/hotbar.js` | `initHotbarUI`: shortcut bar at the bottom. 1-9 / V pick, G use: `hotbarUse` items -> `hotbar:use`, food -> `inventory:use`, others -> lift over the head (`inventory:hold`, G again = stash). Item def extras: `status()` text, `meter()` 0..1 gauge |
 | `ui/map.js` | `initMapUI toggleMap updateMap mapFrozen mapAfterRender`: map view (M). Camera flies to a bird's-eye view; DETAIL_LAYER (grass, particles, footprints, wild items), shadows, bloom and tilt-shift are off; the kid/car/places are DOM icons; once arrived the frame is copied to a 2D canvas and 3D rendering stops (0 draw calls) |
 | `ui/calendar.js` | `initCalendarUI openCalendar updateDateUI`: calendar panel (K), date under the clock, new day / season toasts |
 | `ui/preview.js` | `mountPreview(el)`: live character preview in menu panels (looks at the cursor, current expression, wheel = zoom to the face, click = wave) |
@@ -87,6 +92,11 @@ A save = every registered *slice* together. Each module owns and registers its o
 | `props` | world/layout.js | every pushable prop (letters, crates, pins) |
 | `pickup` | features/pickup | items lying around, regrow timers, item in the hands |
 | `stats` | systems/stats.js | needs, health, stamina, timed effects, profile attributes |
+| `grass` | world/vegetation.js | mown spots (x, z, r, age) |
+| `wallet` | systems/wallet.js | gold (`wallet.incoming` = money on its way, e.g. the shipping bin; not saved, its owner re-sets it) |
+| `hotbar` | systems/hotbar.js | shortcut slots + selected slot |
+| `ranch` | features/ranch | barn / coop level, door, silo, every animal (species, name, hearts, health, care flags, products, baby / pregnancy), eggs in the nests, incubator |
+| `farming` | features/farming | tiles (soil, water, fertiliser, debris, crops, trees, sprinklers), giant crops, farm size, greenhouse, tool levels, watering can, shipping bin |
 
 Adding game state (fishing, hunger/thirst/stamina…): call `registerSave('<name>', { version: 1, save, load, reset, summary })` in the module that owns it. `load` may run mid-game, so it must clean up the current state first. A save without that slice (made before the feature existed) gets `reset()`. When the data shape changes, bump `version` and add `migrate(data, fromVersion)`.
 
@@ -137,6 +147,13 @@ Names are `area:verb`. Add every new event to this table.
 | `time:skipped` | `{ hours }` | systems/daynight.js `skipTime` (sleep, toilet, fainting) | ui/ui.js (time panel) |
 | `survival:consumed` | `{ id, delta, cured }` | features/survival after eating / drinking | none yet |
 | `debug:chest` | none | the debug chest in the Balai gazebo (features/survival, only when `DEBUG`) | features/debug |
+| `hotbar:changed` | `hotbar` | systems/hotbar.js | ui/hotbar.js, ui/inventory.js |
+| `hotbar:use` | `{ id }` | ui/hotbar.js on G when the item has `hotbarUse` | features/farming (tools, seeds, fertiliser, sprinklers), features/ranch (feed, brush, milker, shears, medicine, potion, rumput); each ignores items that aren't its own |
+| `hotbar:refresh` | none | anyone whose item's `status()` / `meter()` changed | ui/hotbar.js (redraw) |
+| `wallet:changed` | `{ gold, delta }` | systems/wallet.js | ui/inventory.js (money in the clock panel) |
+| `farming:harvest` | `{ id, n, giant }` | features/farming for every harvested produce | none yet (quests, stats) |
+| `farming:shipped` | `{ gold }` | features/farming when the shipping bin pays out in the morning | none yet |
+| `farming:debugGrow` | none | debug chest "Tumbuhkan tanaman" | features/farming |
 | `survival:slept` | `{ hours }` | features/survival after sleeping | none yet |
 | *(board action)* | none | any `public/assets/data/zones.json` board with `"action": "<event>"` | whoever listens (a warning is logged if nobody does) |
 

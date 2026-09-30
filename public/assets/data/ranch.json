@@ -1,0 +1,57 @@
+{
+  "_help": "Animal farming (js/features/ranch). Coordinates are world metres (the ranch sits east of the kiosk plaza, road from worldmap.js RANCH). barn/coop levels: w x d building size, cap = animals it houses, cost to upgrade to that level (gold + items: kayu from felling trees, batu). species: home = barn | coop | pet, price, max (0 = only limited by the building), product = item id (every = days between products, tool = item needed to collect it, null = picked up by hand from the nest), feed = item ids it eats (rumput from mowing, pakan_unggas from the shop, jagung from the farm), adultDays = days a baby needs to grow up, variants = coat colours. Affection: 0..1000 points = 0..10 hearts; product quality ⭐ = 1 + hearts/2 (minus 1 when health < 60), golden product chance at 10 hearts + full health.",
+  "area": { "x0": 38, "x1": 66, "z0": 20, "z1": 41 },
+  "pasture": { "x0": 49.2, "x1": 65.3, "z0": 21.4, "z1": 39.7, "fenceX": 48.4 },
+  "pond": { "x": 61, "z": 35.2, "r": 2.3 },
+  "barn": { "x0": 38.5, "z0": 22, "levels": [
+    { "name": "Kandang Kecil", "w": 8, "d": 7, "cap": 4 },
+    { "name": "Kandang Besar", "w": 8, "d": 11, "cap": 8, "silo": true, "cost": { "gold": 5000, "kayu": 20, "batu": 20 },
+      "desc": "Kandang diperpanjang (8 hewan) + silo untuk menyimpan rumput." },
+    { "name": "Kandang Mewah", "w": 9.5, "d": 11, "cap": 12, "silo": true, "auto": true, "heater": true, "cost": { "gold": 12000, "kayu": 40, "batu": 40 },
+      "desc": "12 hewan, tempat pakan terisi otomatis dari silo tiap pagi, pemanas: hewan tidak sakit di musim dingin." }
+  ] },
+  "coop": { "x0": 39.5, "z0": 35.2, "levels": [
+    { "name": "Kandang Ayam", "w": 5, "d": 4, "cap": 4 },
+    { "name": "Kandang Ayam Besar", "w": 6.5, "d": 4.6, "cap": 8, "incubator": true, "cost": { "gold": 3500, "kayu": 15, "batu": 10 },
+      "desc": "8 unggas + mesin tetas: masukkan telur, 3 hari kemudian menetas." }
+  ] },
+  "silo": { "x": 37.3, "z": 27, "max": 999 },
+  "shop": { "x": 60, "z": 18.4 },
+  "dogHouse": { "x": 49.4, "z": 19.3 },
+  "outside": { "from": 7, "to": 17.5, "weathers": ["cerah", "berawan"], "notSeasons": ["dingin"] },
+  "affection": { "pet": 30, "brush": 25, "handFeed": 12, "fed": 8, "outside": 10, "ride": 25, "hungry": -45, "rain": -30, "sick": -20, "cold": -25 },
+  "health": { "fed": 10, "hungry": -22, "rain": -18, "cold": -15, "sickBelow": 40 },
+  "quality": { "mul": [1, 1.25, 1.5, 2, 3], "goldChance": 0.06, "goldMul": 6 },
+  "incubatorDays": 3, "pregnantDays": 5,
+  "species": {
+    "chicken": { "name": "Ayam", "baby": "Anak Ayam", "icon": "🐔", "home": "coop", "price": 800, "max": 0, "product": "telur_ayam", "every": 1, "tool": null, "feed": ["pakan_unggas", "jagung"], "adultDays": 5, "variants": 2, "sound": "chicken" },
+    "duck":    { "name": "Bebek", "baby": "Anak Bebek", "icon": "🦆", "home": "coop", "price": 1200, "max": 0, "product": "telur_bebek", "every": 2, "tool": null, "feed": ["pakan_unggas", "jagung"], "adultDays": 5, "variants": 2, "sound": "duck" },
+    "cow":     { "name": "Sapi", "baby": "Anak Sapi", "icon": "🐄", "home": "barn", "price": 3500, "max": 0, "product": "susu", "every": 1, "tool": "pemerah", "feed": ["rumput"], "adultDays": 7, "variants": 2, "sound": "cow" },
+    "goat":    { "name": "Kambing", "baby": "Anak Kambing", "icon": "🐐", "home": "barn", "price": 2800, "max": 0, "product": "susu_kambing", "every": 2, "tool": "pemerah", "feed": ["rumput"], "adultDays": 6, "variants": 2, "sound": "goat" },
+    "sheep":   { "name": "Domba", "baby": "Anak Domba", "icon": "🐑", "home": "barn", "price": 3000, "max": 0, "product": "wol", "every": 3, "tool": "gunting", "feed": ["rumput"], "adultDays": 6, "variants": 2, "sound": "sheep" },
+    "horse":   { "name": "Kuda", "baby": "Anak Kuda", "icon": "🐎", "home": "barn", "price": 5000, "max": 1, "product": null, "feed": ["rumput"], "adultDays": 8, "variants": 2, "sound": "horse", "ride": true },
+    "dog":     { "name": "Anjing", "icon": "🐕", "home": "pet", "price": 1000, "max": 1, "product": null, "variants": 2, "sound": "dog" },
+    "cat":     { "name": "Kucing", "icon": "🐈", "home": "pet", "price": 1000, "max": 1, "product": null, "variants": 2, "sound": "cat" }
+  },
+  "products": [
+    { "id": "telur_ayam", "name": "Telur Ayam", "desc": "Telur segar dari ayammu sendiri. Mentah bisa bikin mual.", "price": 50, "model": "egg", "color": "#fff4dc",
+      "use": { "verb": "Makan", "hunger": 18, "effects": [{ "id": "mual", "chance": 0.2 }] } },
+    { "id": "telur_bebek", "name": "Telur Bebek", "desc": "Telur bebek yang besar, cangkangnya kebiruan.", "price": 90, "model": "egg", "color": "#dcecef",
+      "use": { "verb": "Makan", "hunger": 24, "effects": [{ "id": "mual", "chance": 0.2 }] } },
+    { "id": "susu", "name": "Susu Sapi", "desc": "Susu sapi segar. Mengenyangkan dan menghilangkan haus.", "price": 100, "model": "milk", "color": "#ffffff", "cap": "#2f8cff",
+      "use": { "verb": "Minum", "hunger": 10, "thirst": 25 } },
+    { "id": "susu_kambing", "name": "Susu Kambing", "desc": "Susu kambing yang kental dan bergizi.", "price": 130, "model": "milk", "color": "#fff6e0", "cap": "#a0602a",
+      "use": { "verb": "Minum", "hunger": 12, "thirst": 22, "health": 5 } },
+    { "id": "wol", "name": "Wol", "desc": "Bulu domba yang lembut. Bahan kain & benang.", "price": 160, "model": "wool", "color": "#f4f0ea" }
+  ],
+  "goods": [
+    { "id": "pakan_unggas", "name": "Pakan Unggas", "desc": "Biji-bijian untuk ayam & bebek. Isi tempat pakan kandang ayam, atau beri langsung (G).", "price": 20, "model": "feed", "color": "#e0b040" },
+    { "id": "rumput_toko", "buy": "rumput", "name": "Rumput Pakan", "price": 25 },
+    { "id": "sikat", "name": "Sikat Hewan", "desc": "Sikat bulu hewan setiap hari (G di dekat hewan): hewan jadi lebih sayang.", "price": 400, "model": "brush", "tool": true },
+    { "id": "pemerah", "name": "Pemerah Susu", "desc": "Perah susu sapi & kambing (G di dekat hewan).", "price": 900, "model": "milker", "tool": true },
+    { "id": "gunting", "name": "Gunting Bulu", "desc": "Cukur domba yang bulunya sudah lebat (G di dekat domba).", "price": 900, "model": "shears", "tool": true },
+    { "id": "obat_ternak", "name": "Obat Ternak", "desc": "Menyembuhkan hewan yang sakit (G di dekat hewan).", "price": 200, "model": "medicine" },
+    { "id": "ramuan_kawin", "name": "Ramuan Kawin", "desc": "Untuk sapi, kambing, domba, dan kuda dewasa yang sayang padamu (4 hati+). 5 hari kemudian lahir bayinya.", "price": 1200, "model": "potion" }
+  ],
+  "names": ["Mimi", "Bubu", "Cici", "Dodo", "Gembul", "Kiki", "Lala", "Manis", "Moli", "Nana", "Oyen", "Pipit", "Poci", "Rara", "Sisi", "Tuti", "Upik", "Wawa", "Yoyo", "Zaza", "Bento", "Coki", "Jeki", "Kuncung", "Lulu", "Mochi", "Nugi", "Pepi", "Ucup", "Belang", "Kopi", "Ketan", "Tempe", "Tahu", "Gula", "Bolu", "Kelapa", "Cimol", "Onde", "Klepon", "Serabi", "Bakpao"]
+}

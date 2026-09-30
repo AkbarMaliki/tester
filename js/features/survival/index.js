@@ -9,7 +9,6 @@ import { inventory, itemDef, takeFrom, addItem, countOf, removeItem } from '../.
 import { RULES, stats, derived, consume, cure, addEffect, hasEffect, setMeter, sleep, revive, setEnv } from '../../systems/stats.js';
 import { today } from '../../systems/calendar.js';
 import { time, skipTime } from '../../systems/daynight.js';
-import { DEBUG } from '../../game/config.js';
 import { saveGame } from '../../systems/save.js';
 import { addMapMarker } from '../../systems/mapmarkers.js';
 import { BALAI } from '../../world/worldmap.js';
@@ -17,7 +16,7 @@ import { board } from '../../world/props.js';
 import { player, placePlayer, avatar } from '../../entities/player/controller.js';
 import { ui, toast, openModal, closeModal, fadeThrough } from '../../ui/ui.js';
 import { openCalendar } from '../../ui/calendar.js';
-import { fountain, toilet, gazebo, chest, calendarStand } from './models.js';
+import { fountain, toilet, gazebo, calendarStand } from './models.js';
 
 const FOUNTAIN_DRINK = { thirst: 35 };
 const TOILET_HOURS = 0.25, FAINT_HOURS = 4, WAKE_AT = 7;
@@ -125,15 +124,13 @@ export default {
     // +x/+z, so the buildings stand at the back with their fronts (door, bed, tap) facing it and the kid stays visible.
     spots.fountain = fountain(B.x - 1.5, B.z + 5, 0.65);
     spots.toilet = toilet(B.x + 5.5, B.z - 3.5, 0.25);
-    let foot, cal;
-    ({ spot: spots.bed, roof, foot, cal } = gazebo(B.x - 2, B.z - 6, 0.65));
+    let cal;
+    ({ spot: spots.bed, roof, cal } = gazebo(B.x - 2, B.z - 6, 0.65));
     // calendar stand next to the bed: its page shows today, E opens the calendar panel
     const stand = calendarStand(cal.x, cal.z, cal.rot);
     addZone({ pos: stand.spot, label: 'Lihat kalender', range: 1.2, action: openCalendar });
     const repaint = () => stand.draw(today());
     repaint(); on('calendar:day', repaint); on('save:applied', repaint);
-    // debug: chest at the foot of the bed holding every item (the panel is features/debug)
-    if (DEBUG) addZone({ pos: chest(foot.x, foot.z, foot.rot), label: 'Buka peti debug (semua barang)', range: 1.4, action: () => emit('debug:chest') || toast('Fitur debug tidak aktif') });
     board({ x: B.x - 8.5, z: B.z + 6.5, rot: 0.62, map: false, title: 'BALAI WARGA', label: 'Baca papan Balai Warga', html:
       '<h2>Balai Warga</h2><p>Tempat istirahat warga desa.</p><ul><li><b>Keran air minum</b>: hilangkan haus, isi ulang botol kosong.</li>'
       + '<li><b>Toilet umum</b>: kosongkan kandung kemih. Juga menyembuhkan keracunan &amp; mual.</li>'

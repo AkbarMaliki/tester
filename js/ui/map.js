@@ -6,12 +6,13 @@ import * as THREE from 'three';
 import { $, clamp, lerp, smooth } from '../engine/util.js';
 import { renderer, scene, camera, sun, bloom, setTiltShift, DETAIL_LAYER } from '../engine/core.js';
 import { sfx } from '../engine/audio.js';
-import { clearKeys } from '../systems/input.js';
+import { clearKeys, is } from '../systems/input.js';
 import { mapMarkers } from '../systems/mapmarkers.js';
 import { today, fmtDate } from '../systems/calendar.js';
 import { avatar, player } from '../entities/player/controller.js';
 import { car } from '../entities/car/car.js';
 import { ui } from './ui.js';
+import { settings } from './settings.js';
 
 const FLY = 0.9;   // seconds up / down
 const MAP = { pos: new THREE.Vector3(0, 245, 75), at: new THREE.Vector3(0, 0, 6), fov: 50 };
@@ -60,7 +61,7 @@ function setLite(on) {
     saved.shadow = sun.castShadow; saved.bloom = bloom.enabled; saved.avatar = avatar.visible;
     camera.layers.disable(DETAIL_LAYER); sun.castShadow = false; bloom.enabled = false; setTiltShift(false);
   } else {
-    camera.layers.enable(DETAIL_LAYER); sun.castShadow = saved.shadow; bloom.enabled = saved.bloom; setTiltShift($('optTilt').checked);
+    camera.layers.enable(DETAIL_LAYER); sun.castShadow = saved.shadow; bloom.enabled = saved.bloom; setTiltShift(settings.tilt);
     avatar.visible = saved.avatar;
   }
 }
@@ -125,7 +126,8 @@ export function initMapUI() {
   $('mapClose').onclick = () => toggleMap(false);
   addEventListener('keydown', (e) => {
     if (e.repeat || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-    if (e.code === 'KeyM') toggleMap();
+    if (document.body.classList.contains('rebinding')) return;
+    if (is(e.code, 'map')) toggleMap();
     else if (e.code === 'Escape') toggleMap(false);
   });
 }

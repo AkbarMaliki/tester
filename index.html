@@ -23,6 +23,7 @@
       <button class="amatic" data-mm="new">Main Baru</button>
       <button class="amatic" data-mm="continue" id="mmContinue">Lanjutkan<small id="mmContinueInfo"></small></button>
       <button class="amatic" data-mm="load">Muat Game</button>
+      <button class="amatic" data-mm="settings">Pengaturan</button>
       <button class="amatic" data-mm="exit">Keluar</button>
     </div>
     <div class="mm-panel" id="mmPanel"></div>
@@ -32,7 +33,7 @@
 
 <div id="pause"><div class="pause-card"><div id="pauseBody"></div></div></div>
 
-<div id="clock" title="Pengaturan waktu">
+<div id="clock" title="Pengaturan">
   <svg viewBox="0 0 100 56">
     <path d="M6 50 A44 44 0 0 1 94 50" stroke="#ffffff40" stroke-width="2" stroke-dasharray="3 4" fill="none"/>
     <line x1="0" y1="50" x2="100" y2="50" stroke="#ffffff66" stroke-width="2"/>
@@ -41,36 +42,17 @@
   <div class="t amatic"><span id="clockTime">00:00</span><span id="clockLabel">Malam</span></div>
   <div class="gear"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></div>
   <div id="clockDate" title="Kalender (K)"></div>
+  <div id="clockGold" title="Uang (klik: buka tas)"><i>💰</i><b id="goldAmt">0 G</b><small id="goldIn"></small></div>
 </div>
 
-<div id="settings">
-  <h3 class="amatic">Pengaturan</h3>
-  <label><input type="checkbox" id="realTime" checked> Ikuti jam asli (<span id="realNow"></span>)</label>
-  <div class="row"><span>Jam</span><input type="range" id="hourSlider" min="0" max="24" step="0.05"><b id="hourVal"></b></div>
-  <div class="row"><span>Kecepatan</span>
-    <select id="speedSel">
-      <option value="0">Berhenti</option>
-      <option value="1">1× (nyata)</option>
-      <option value="60" selected>60× (1 mnt = 1 jam)</option>
-      <option value="600">600×</option>
-      <option value="3600">3600× (1 dtk = 1 jam)</option>
-    </select></div>
-  <div class="presets">
-    <button data-h="5.4">Subuh</button><button data-h="6.6">Fajar</button><button data-h="12">Siang</button>
-    <button data-h="17.6">Sunset</button><button data-h="19">Senja</button><button data-h="23">Malam</button>
-  </div>
-  <div class="row"><span>Cuaca</span><small style="opacity:.6">hari ini (kembali otomatis besok)</small></div>
-  <div class="presets weather" id="weatherBtns"></div>
-  <hr>
-  <div class="row"><span>Kualitas</span><select id="qualitySel"><option value="auto">Auto (disarankan)</option><option value="high">Tinggi</option><option value="mid">Sedang (laptop)</option><option value="low">Rendah</option></select></div>
-  <label><input type="checkbox" id="optShadow" checked> Bayangan</label>
-  <label><input type="checkbox" id="optBloom" checked> Bloom (cahaya berpendar)</label>
-  <label><input type="checkbox" id="optTilt" checked> Tilt-shift (blur tepi)</label>
-  <label><input type="checkbox" id="optWind" checked> Garis angin</label>
-  <label><input type="checkbox" id="optFps"> Tampilkan FPS</label>
-  <p style="opacity:.6;margin:10px 0 0">Shortcut: <kbd>[</kbd> <kbd>]</kbd> geser jam ±1, <kbd>T</kbd> buka/tutup panel ini.</p>
-</div>
 <div id="fps"></div>
+
+<div id="settingsMenu">
+  <div class="set-card">
+    <div class="inv-head"><h2 class="amatic">Pengaturan</h2><span class="inv-cap">tersimpan di perangkat ini</span><button class="inv-x" id="setClose" title="Tutup (Esc)">✕</button></div>
+    <div class="set-wrap"><nav id="setTabs"></nav><div id="setBody"></div></div>
+  </div>
+</div>
 
 <div class="hudbtn" id="menuBtn" title="Menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
 <div class="hudbtn" id="respawnBtn" title="Respawn (R)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/><path d="M5 21h14"/></svg></div>
@@ -90,6 +72,7 @@
   <b id="bagCount"></b>
 </div>
 <div id="toasts"></div>
+<div id="hotbar"></div>
 
 <div id="inventory">
   <div class="inv-card">
@@ -99,6 +82,8 @@
       <div>
         <div class="inv-grid" id="invGrid"></div>
         <p class="inv-tip">Klik untuk memilih · seret untuk memindah</p>
+        <div class="inv-hb-head">Shortcut <small>seret barang ke sini · tombol 1-9 · klik = lepas</small></div>
+        <div class="inv-hotbar" id="invHotbar"></div>
       </div>
       <div class="inv-side">
         <div class="inv-hand"><span>Di tangan</span><div class="slot" id="invHand"></div></div>
@@ -136,39 +121,7 @@
 
 <div id="modal"><div class="card"><div id="modalBody"></div><button class="close" id="modalClose">Tutup</button></div></div>
 
-<template id="controlsTemplate">
-  <h2>Kontrol</h2>
-  <table class="keys">
-    <tr><td colspan="2"><b>Jalan kaki</b></td></tr>
-    <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Jalan (arah mengikuti kamera)</td></tr>
-    <tr><td><kbd>Shift</kbd></td><td>Lari</td></tr><tr><td><kbd>Space</kbd></td><td>Lompat</td></tr>
-    <tr><td><kbd>F</kbd> / <kbd>E</kbd></td><td>Masuk mobil (dekati mobil dulu)</td></tr>
-    <tr><td><kbd>R</kbd></td><td>Kembali ke titik awal</td></tr>
-    <tr><td colspan="2"><b>Barang</b></td></tr>
-    <tr><td><kbd>E</kbd></td><td>Ambil barang (diangkat di atas kepala), <kbd>E</kbd> lagi = simpan ke tas</td></tr>
-    <tr><td><kbd>Q</kbd></td><td>Taruh barang yang dipegang ke tanah</td></tr>
-    <tr><td><kbd>I</kbd> / ikon tas</td><td>Buka tas: pilih barang lalu Pegang / Buang, seret untuk memindah</td></tr>
-    <tr><td colspan="2"><b>Bertahan hidup</b></td></tr>
-    <tr><td><kbd>P</kbd> / panel kiri bawah</td><td>Profil karakter: atribut, kondisi, efek aktif</td></tr>
-    <tr><td><kbd>K</kbd> / tanggal kiri atas</td><td>Kalender: musim, hari, festival, cuaca besok</td></tr>
-    <tr><td>Tas → Makan / Minum</td><td>Isi lapar &amp; haus (jamur dan telur mentah bisa bikin sakit)</td></tr>
-    <tr><td>Balai Warga</td><td>Keran air minum, toilet umum, gazebo untuk tidur</td></tr>
-    <tr><td colspan="2"><b>Di mobil</b></td></tr>
-    <tr><td><kbd>W</kbd><kbd>↑</kbd></td><td>Maju</td></tr><tr><td><kbd>S</kbd><kbd>↓</kbd></td><td>Mundur</td></tr>
-    <tr><td><kbd>A</kbd><kbd>D</kbd></td><td>Belok</td></tr><tr><td><kbd>Shift</kbd></td><td>Boost</td></tr>
-    <tr><td><kbd>Space</kbd></td><td>Rem</td></tr><tr><td><kbd>F</kbd></td><td>Keluar mobil (mobil direm otomatis)</td></tr>
-    <tr><td><kbd>H</kbd></td><td>Klakson</td></tr><tr><td><kbd>R</kbd></td><td>Balikkan mobil / respawn</td></tr>
-    <tr><td colspan="2"><b>Umum</b></td></tr>
-    <tr><td><kbd>E</kbd></td><td>Interaksi (berlian putih)</td></tr>
-    <tr><td><kbd>Esc</kbd> / tombol ☰</td><td>Menu jeda: simpan game, muat game, kembali ke menu utama</td></tr>
-    <tr><td><kbd>T</kbd></td><td>Panel waktu &amp; pengaturan</td></tr><tr><td><kbd>[</kbd><kbd>]</kbd></td><td>Geser jam ±1</td></tr>
-    <tr><td><kbd>M</kbd> / tombol 🗺</td><td>Peta (pandangan burung seluruh dunia)</td></tr>
-    <tr><td><kbd>N</kbd></td><td>Suara on/off</td></tr>
-    <tr><td>Drag mouse / jari</td><td>Putar kamera</td></tr><tr><td>Scroll / cubit</td><td>Zoom kamera</td></tr>
-    <tr><td><kbd>Z</kbd><kbd>X</kbd></td><td>Putar kamera kiri/kanan</td></tr><tr><td><kbd>-</kbd><kbd>=</kbd></td><td>Zoom out/in</td></tr>
-    <tr><td><kbd>C</kbd> / klik ganda</td><td>Reset kamera</td></tr>
-  </table>
-</template>
+
 
 <div id="touch">
   <div class="grp"><button data-k="left">◀</button><button data-k="right">▶</button></div>
